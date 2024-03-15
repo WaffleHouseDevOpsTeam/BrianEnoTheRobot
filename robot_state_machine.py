@@ -157,4 +157,3 @@ while True:
 	sm.update_sensors()
 	sm.evaluate_state()
 
-hardware_exercise_8.py
