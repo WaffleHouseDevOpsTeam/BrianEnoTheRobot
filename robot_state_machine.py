@@ -2,7 +2,6 @@ from XRPLib.defaults import *
 from GFULib.defaults import *
 import time
 
-
 class StateMachine:
 	# The State variable. Start the state in the RESET state
 	state = "RESET"
@@ -47,9 +46,9 @@ class StateMachine:
 	# We want to have a function that prints the state name for debugging
 	# But only when we enter it - not every time through - that would be crazy
 	def print_state(self, newState):
-		if newState != self.stateNameame:
-			print(f"Entering state {newstate}")
-			self.stateName = newstate
+		if newState != self.stateName:
+			print(f"Entering state {newState}")
+			self.stateName = newState
 
 	def update_sensors(self):
 		# Each time we are called, check the current time ...
