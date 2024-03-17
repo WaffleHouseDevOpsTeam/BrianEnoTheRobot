@@ -7,7 +7,7 @@ class StateMachine:
 	# The State variable. Start the state in the RESET state
 	state = "RESET"
 	# This is used to save the name of the current state
-	statename = ""
+	stateName = ""
 
 	# Initial motor speeds
 	target_speed = 10
@@ -15,8 +15,8 @@ class StateMachine:
 	right_speed = target_speed
 
 	# Proximity values for wall following
-	proximity_center = 250  # The ideal value we want to read
-	proximity_range = 25 # The complete range over which the proximity will be considered "stable"
+	proximity_center = 500  # The ideal value we want to read
+	proximity_range = 50  # The complete range over which the proximity will be considered "stable"
 	# That is - nothing to worry about. So - proximity_center +/- range/2
 
 	# The time in ms between each read of the sensors.
@@ -46,10 +46,10 @@ class StateMachine:
 
 	# We want to have a function that prints the state name for debugging
 	# But only when we enter it - not every time through - that would be crazy
-	def print_state(self, newstate):
-		if newstate != self.statename:
+	def print_state(self, newState):
+		if newState != self.stateNameame:
 			print(f"Entering state {newstate}")
-			self.statename = newstate
+			self.stateName = newstate
 
 	def update_sensors(self):
 		# Each time we are called, check the current time ...
@@ -87,8 +87,8 @@ class StateMachine:
 
 		elif self.state == "FOLLOW_LEFT_WALL":
 			self.print_state("FOLLOW_LEFT_WALL")
-			# If there is something within 10 cm ahead (and we are getting a legit reading that isn't 0
-			if self.distAhead > 1.0 and self.distAhead < 20.0:
+			# If there is something within 10 cm ahead (and we are getting a legit reading that isn't 0):
+			if 1.0 < self.distAhead < 20.0:
 				self.state = "TURN_AROUND_LEFT"
 			# If we are getting too close to the left wall (number getting bigger)
 			elif self.distLeft > self.proximity_center + self.proximity_range / 2:
@@ -105,11 +105,11 @@ class StateMachine:
 			# in updating here faster - as we won't detect any change until after the next
 			# sensor update. We will steer away faster and faster each time.
 			# I suppose a better implementation could scale the amount based on how far away
-			# the wall is ... hmmm ....
+			# the wall is ... hmm ....
 			if time.ticks_diff(current_time, self.update_time["state_interval"]) > self.read_ms:
 				self.update_time["state_interval"] = current_time
-				print(self.update_time["proximity0"]/2500000)
-				self.left_speed = self.left_speed + (self.update_time["proximity0"]/2500000)
+				self.left_speed = self.left_speed + .1
+				drivetrain.set_speed(self.left_speed, self.right_speed)
 
 			# Once we see the value is within tolerance, immediately reset the speed (to keep it straight)
 			# And let's return to the state we came from - which is FOLLOW_LEFT
@@ -124,15 +124,25 @@ class StateMachine:
 
 		elif self.state == "VEER_TOWARD_LEFT_WALL":
 			self.print_state("VEER_TOWARD_LEFT_WALL")
-			# As the sensors don't update faster than every read_ms, no sense
-			# in updating here faster - as we won't detect any change until after the next
-			# sensor update. We will steer away faster and faster each time.
-			# I suppose a better implementation could scale the amount based on how far away
-			# the wall is ... hmmm ....
+
+			# As the sensors don't update faster than every read_ms, no sense in updating here faster
+			# since we won't detect any change until after the next sensor update. We will steer away
+			# faster and faster each time. I suppose a better implementation could scale the amount
+			# based on how far away the wall is ... hmm ....
+			initVeerState = self.distLeft
 			if time.ticks_diff(current_time, self.update_time["state_interval"]) > self.read_ms:
-				self.update_time["state_interval"] = current_time
-				self.right_speed = self.right_speed + .1
-				drivetrain.set_speed(self.left_speed, self.right_speed)
+				if self.distLeft > (initVeerState / 2):
+					self.update_time["state_interval"] = current_time
+					self.right_speed += .1
+					drivetrain.set_speed(self.left_speed, self.right_speed)
+				elif self.distLeft <= (initVeerState / 2):
+					self.update_time["state_interval"] = current_time
+					self.right_speed = self.right_speed
+					drivetrain.set_speed(self.left_speed, self.right_speed)
+				elif self.distLeft <= (initVeerState / 4):
+					self.update_time["state_interval"] = current_time
+					self.right_speed -= .1
+					drivetrain.set_speed(self.left_speed, self.right_speed)
 
 			# Once we see the value is within tolerance, immediately reset the speed (to keep it straight)
 			# And let's return to the state we came from - which is FOLLOW_LEFT
@@ -152,8 +162,8 @@ class StateMachine:
 			drivetrain.turn(180, .8, 5)
 			self.state = "FOLLOW_LEFT_WALL"
 
+
 sm = StateMachine()
 while True:
 	sm.update_sensors()
 	sm.evaluate_state()
-
