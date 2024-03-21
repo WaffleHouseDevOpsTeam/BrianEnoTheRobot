@@ -101,12 +101,6 @@ class StateMachine:
 
         elif self.state == "VEER_AWAY_FROM_LEFT_WALL":
             self.print_state("VEER_AWAY_FROM_LEFT_WALL")
-
-            # As the sensors don't update faster than every read_ms, no sense
-            # in updating here faster - as we won't detect any change until after the next
-            # sensor update. We will steer away faster and faster each time.
-            # I suppose a better implementation could scale the amount based on how far away
-            # the wall is ... hmm ....
             if time.ticks_diff(current_time, self.update_time["state_interval"]) > self.read_ms:
                 self.update_time["state_interval"] = current_time
                 self.left_speed = self.left_speed + ((abs(self.proximity_center - self.distLeft)/self.proximity_center)*.1)
@@ -126,13 +120,7 @@ class StateMachine:
 
         elif self.state == "VEER_TOWARD_LEFT_WALL":
             self.print_state("VEER_TOWARD_LEFT_WALL")
-            # As the sensors don't update faster than every read_ms, no sense in updating here faster
-            # since we won't detect any change until after the next sensor update. We will steer away
-            # faster and faster each time. I suppose a better implementation could scale the amount
-            # based on how far away the wall is ... hmm ....
-            initVeerState = self.distLeft
             self.right_speed = self.right_speed + ((abs(self.proximity_center - self.distLeft)/self.proximity_center)*.1)
-            #print(self.right_speed)
             drivetrain.set_speed(self.left_speed, self.right_speed)
 
             # Once we see the value is within tolerance, immediately reset the speed (to keep it straight)
@@ -148,7 +136,6 @@ class StateMachine:
 
         elif self.state == "TURN_AROUND_LEFT":
             self.print_state("TURN_AROUND_LEFT********************************************")
-            
             # TODO
             # We don't like this - as it is a blocking function call - so you should fix this :)
             if self.new_turn:
