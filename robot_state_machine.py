@@ -84,13 +84,13 @@ class StateMachine:
         if self.state == "RESET":
             self.print_state("RESET")
             drivetrain.set_speed(self.target_speed, self.target_speed)
-            self.state = "ENCOUNTER_WALL"
+            self.state = "FOLLOW_LEFT_WALL"
 
         elif self.state == "FOLLOW_LEFT_WALL":
             self.print_state("FOLLOW_LEFT_WALL")
             # If there is something within 10 cm ahead (and we are getting a legit reading that isn't 0):
             if 1.0 < self.distAhead < 20.0:
-                self.state = "TURN_AROUND_LEFT"
+                self.state = "ENCOUNTER_WALL"
             # If we are getting too close to the left wall (number getting bigger)
             elif self.distLeft > self.proximity_center + self.proximity_range / 2:
                 self.state = "VEER_AWAY_FROM_LEFT_WALL"
@@ -134,29 +134,7 @@ class StateMachine:
                 drivetrain.set_speed(self.target_speed, self.target_speed)
                 self.state = "FOLLOW_LEFT_WALL"
 
-        elif self.state == "TURN_AROUND_LEFT":
-            self.print_state("TURN_AROUND_LEFT********************************************")
-            # TODO
-            # We don't like this - as it is a blocking function call - so you should fix this :)
-            if self.new_turn:
-                self.init_heading = self.heading % 360
-                self.new_turn = False
-                print(f'{self.heading % 360}/{self.head_diff % 360} ({self.right_speed}, {self.left_speed}) - start a turn')
-            elif self.new_turn is False: 
-                print(f'{self.heading % 360}/{self.head_diff % 360} ({self.right_speed}, {self.left_speed}) - still a turn')
-                # if angle of current heading - angle init heading < 45
-                if self.head_diff > 45:
-                    self.right_speed = -1 * self.target_speed
-                    self.left_speed =  self.target_speed
-                    print(f'speeds ({self.left_speed}, {self.right_speed})')
-                    self.head_diff = abs((self.heading  % 360) - self.init_heading % 360)
-                    # self.prev_head_diff = self.head_diff
-                elif self.head_diff < 45:
-                    self.right_speed = 0
-                    self.left_speed = 0
-                    self.new_turn = True
-                    self.state = "FOLLOW_LEFT_WALL"
-            drivetrain.set_speed(self.left_speed, self.right_speed)
+                drivetrain.set_speed(self.left_speed, self.right_speed)
         elif self.state == "ENCOUNTER_WALL":
             self.print_state("Encounter Wall")
             # TODO
