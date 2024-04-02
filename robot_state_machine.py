@@ -146,34 +146,44 @@ class StateMachine:
             self.print_state("Encounter Wall")
             # if self.new_turn == True:
             drivetrain.straight(5,-1)
-            self.target_heading = self.heading - 30
+            self.target_heading = self.heading - 90
             # self.new_turn = True
-            print(f'{self.heading}/{self.target_heading} ({self.right_speed}, {self.left_speed}) - start a turn')
+            # print(f'{self.heading}/{self.target_heading} ({self.right_speed}, {self.left_speed}) - start a turn')
             self.state = "TURN_LEFT"
 
         elif self.state == "TURN_LEFT":
-            # self.new_turn = False
-            print(f'{self.heading % 360}/{self.target_heading % 360} ({self.right_speed}, {self.left_speed}) - still a turn')
-            if (self.heading) == (self.target_heading):
+
+            #This is a value that that gives the percent difference we can allow in a full turn
+            accurcy_perc = 3
+
+            # These bounds use the accurcy perc variable mentioned above make upper and lower limit targets for the heading of our robot.
+            # This is what all of the if statements are looking at to see if it has completed a full turn 
+            # (this also should have been a multiline comment)
+
+            # If it is outside of the bounds, it keeps turning
+            # We need to figure out how to tell if it has potentially over turned or not, as if it turns above, then it might end up spinning forever
+            # Which is no bueno
+            target_heading_bounds = [self.target_heading + (self.target_heading * 0.01 * accurcy_perc), self.target_heading - (self.target_heading * 0.01 * accurcy_perc)]
+            if self.heading not in range(target_heading_bounds[0], target_heading_bounds[1]):
                 self.right_speed = -1 * self.target_speed
                 self.left_speed =  self.target_speed
                 print(f'speeds ({self.left_speed}, {self.right_speed})')
-                self.head_diff = abs((self.heading  % 360) - self.target_heading % 360)
-                # self.prev_head_diff = self.head_diff
-            # if (abs(abs(self.heading) - abs(self.target_heading)) <= -3):
-            #     self.right_speed = self.target_speed
-            #     self.left_speed =  -1 * self.target_speed
-            #     print(f'speeds ({self.left_speed}, {self.right_speed})')
-            #     self.head_diff = abs((self.heading  % 360) - self.target_heading % 360)
-                # self.prev_head_diff = self.head_diff    
-            elif -3 < ((abs(self.heading  % 360) - abs(self.target_heading  % 360))) < 3:
+                print(f'target {self.target_heading}\nbounds {target_heading_bounds[0]} {target_heading_bounds[1]}\ncurrent heading {self.heading}')
+            
+            # If it is inside of these bounds, then it will stop turning, and continue following the wall
+            # we need to add more statements to figure out if it is hinged on a wall nearby or something similar,
+            # so that it becomes a non interupting turn in regards to the rest of the program
+            elif self.heading in range(target_heading_bounds[0], target_heading_bounds[1]):
                 self.right_speed = 0
                 self.left_speed = 0
                 self.new_turn = True
                 self.state = "FOLLOW_LEFT_WALL"
+
             elif 1.0 < self.distAhead < 20.0:
                 self.state = "ENCOUNTER_WALL"
-        drivetrain.set_speed(self.left_speed, self.right_speed)
+
+            print(f'target {self.target_heading}\nbounds {target_heading_bounds[0]} {target_heading_bounds[1]}\ncurrent heading {self.heading}')
+            drivetrain.set_speed(self.left_speed, self.right_speed)
 
 sm = StateMachine()
 while True:
