@@ -63,7 +63,7 @@ class StateMachine:
 
         if time.ticks_diff(current_time, self.update_time["rangefinder"]) >= self.read_ms:
             self.update_time["rangefinder"] += self.read_ms
-            self.distAhead = rangefinder.distance()
+            self.distAhead = GFURangefinder.distance()
         if time.ticks_diff(current_time, self.update_time["proximity0"]) >= self.read_ms:
             self.update_time["proximity0"] += self.read_ms
             self.distRight = proximity0.getProximity()
@@ -144,17 +144,17 @@ class StateMachine:
                 drivetrain.set_speed(self.left_speed, self.right_speed)
         elif self.state == "ENCOUNTER_WALL":
             self.print_state("Encounter Wall")
-            # if self.new_turn == True:
-            drivetrain.straight(5,-1)
+            if self.new_turn == True:
+                drivetrain.straight(5,-1)
             self.target_heading = self.heading - 30
-            # self.new_turn = True
             print(f'{self.heading}/{self.target_heading} ({self.right_speed}, {self.left_speed}) - start a turn')
             self.state = "TURN_LEFT"
 
         elif self.state == "TURN_LEFT":
+            self.new_turn = False
             # self.new_turn = False
             print(f'{self.heading % 360}/{self.target_heading % 360} ({self.right_speed}, {self.left_speed}) - still a turn')
-            if (self.heading) == (self.target_heading):
+            if (self.heading) != (self.target_heading):
                 self.right_speed = -1 * self.target_speed
                 self.left_speed =  self.target_speed
                 print(f'speeds ({self.left_speed}, {self.right_speed})')
@@ -171,6 +171,7 @@ class StateMachine:
                 self.left_speed = 0
                 self.new_turn = True
                 self.state = "FOLLOW_LEFT_WALL"
+                self.new_turn = True
             elif 1.0 < self.distAhead < 20.0:
                 self.state = "ENCOUNTER_WALL"
         drivetrain.set_speed(self.left_speed, self.right_speed)
