@@ -166,6 +166,7 @@ class StateMachine:
             target_heading_bounds = [self.target_heading + (self.target_heading * 0.01 * accurcy_perc), self.target_heading - (self.target_heading * 0.01 * accurcy_perc)]
             print(target_heading_bounds[1], '-', target_heading_bounds[0])
             print(self.heading in range(int(target_heading_bounds[1]), int(target_heading_bounds[0])))
+                print(int(target_heading_bounds[1]) <= self.heading <= int(target_heading_bounds[0]))
             if int(target_heading_bounds[1]) <= self.heading <= int(target_heading_bounds[0]):
                 self.right_speed = 0
                 self.left_speed = 0
@@ -173,7 +174,7 @@ class StateMachine:
                 self.state = "FOLLOW_LEFT_WALL"
                 print('we are so back')
     
-            elif not (int(target_heading_bounds[1]) <= self.heading <= int(target_heading_bounds[0])):
+            else:
                 self.right_speed = -1 * self.target_speed
                 self.left_speed =  self.target_speed
                 # print(f'speeds ({self.left_speed}, {self.right_speed})')
