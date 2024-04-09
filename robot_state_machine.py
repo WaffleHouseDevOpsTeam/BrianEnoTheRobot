@@ -174,7 +174,7 @@ class StateMachine:
             print(f'In range is {self.heading in range(int(target_heading_bounds[1]), int(target_heading_bounds[0]))}')
             # print(f'{int(target_heading_bounds[1]) <= self.heading <= int(target_heading_bounds[0])}')
 
-            while int(target_heading_bounds[1]) <= self.heading <= int(target_heading_bounds[0]):
+            while not (int(target_heading_bounds[1]) <= self.heading <= int(target_heading_bounds[0])):
                 print(f'In range is {self.heading in range(int(target_heading_bounds[1]), int(target_heading_bounds[0]))}')
                 self.right_speed = -1 * self.target_speed
                 self.left_speed = self.target_speed
@@ -198,7 +198,8 @@ class StateMachine:
             print(
                 f'target {self.target_heading}\nbounds {target_heading_bounds[0]} {target_heading_bounds[1]}\ncurrent heading {self.heading}')
             drivetrain.set_speed(self.left_speed, self.right_speed)
-
+        elif self.state == 'KINDERGARTEN':
+            self.color = color.getRGBLux()
 sm = StateMachine()
 
 
