@@ -95,7 +95,7 @@ class StateMachine:
             print('following left wall')
             self.print_state("FOLLOW_LEFT_WALL")
             # If there is something within 10 cm ahead (and we are getting a legit reading that isn't 0):
-            if 1.0 < self.distAhead < 20.0:
+            if 0.0 < self.distAhead < 20.0:
                 self.state = "ENCOUNTER_WALL"
             # If we are getting too close to the left wall (number getting bigger)
             elif self.distLeft > self.proximity_center + self.proximity_range / 2:
@@ -103,12 +103,14 @@ class StateMachine:
             # If we are too far away from the left wall (number getting smaller)
             elif self.distLeft < self.proximity_center - self.proximity_range / 2:
                 self.state = "VEER_TOWARD_LEFT_WALL"
-            elif self.distAhead == 0.0:
-                print('rangefinder broken :\(')
+            # elif self.distAhead == 0.0:
+            #     print('rangefinder broken :\(')
         # Otherwise, we just stay in this happy little state :)
 
         elif self.state == "VEER_AWAY_FROM_LEFT_WALL":
             self.print_state("VEER_AWAY_FROM_LEFT_WALL")
+            if 0.0 < self.distAhead < 20.0:
+                self.state = "ENCOUNTER_WALL"
             if time.ticks_diff(current_time, self.update_time["state_interval"]) > self.read_ms:
                 self.update_time["state_interval"] = current_time
                 if self.left_speed < 40:
@@ -130,6 +132,9 @@ class StateMachine:
 
         elif self.state == "VEER_TOWARD_LEFT_WALL":
             self.print_state("VEER_TOWARD_LEFT_WALL")
+            print('dist=', self.distAhead)
+            if 0.0 < self.distAhead < 20.0:
+                self.state = "ENCOUNTER_WALL"
             if self.right_speed < 40:
                 self.right_speed = self.right_speed + (
                             (abs(self.proximity_center - self.distLeft) / self.proximity_center) * .1)
@@ -143,6 +148,7 @@ class StateMachine:
                 self.right_speed = self.target_speed
                 drivetrain.set_speed(self.target_speed, self.target_speed)
                 self.state = "FOLLOW_LEFT_WALL"
+                print('dist=', self.distAhead)
                 drivetrain.set_speed(self.left_speed, self.right_speed)
 
         elif self.state == "ENCOUNTER_WALL":
@@ -161,29 +167,26 @@ class StateMachine:
 
             # These bounds use the accurcy perc variable mentioned above make upper and lower limit targets for the heading of our robot.
             # This is what all of the if statements are looking at to see if it has completed a full turn 
-            # (this also should have been a multiline comment)
 
-            # If it is outside of the bounds, it keeps turning
-            # We need to figure out how to tell if it has potentially over turned or not, as if it turns above, then it might end up spinning forever
-            # Which is no bueno
+            # If it is outside of the bounds, it keeps turning.
 
             target_heading_bounds = [self.target_heading + (self.target_heading * 0.01 * accurcy_perc),
                                      self.target_heading - (self.target_heading * 0.01 * accurcy_perc)]
 
             print(target_heading_bounds[1], '-', target_heading_bounds[0])
             print(f'In range is {self.heading in range(int(target_heading_bounds[1]), int(target_heading_bounds[0]))}')
-            # print(f'{int(target_heading_bounds[1]) <= self.heading <= int(target_heading_bounds[0])}')
 
-            while not (int(target_heading_bounds[1]) <= self.heading <= int(target_heading_bounds[0])):
-                print(f'In range is {self.heading in range(int(target_heading_bounds[1]), int(target_heading_bounds[0]))}')
+            if not int(target_heading_bounds[1]) <= self.heading <= int(target_heading_bounds[0]):
+                print(f'In range is false skjdh')
                 self.right_speed = -1 * self.target_speed
                 self.left_speed = self.target_speed
-                if 1.0 < self.distAhead < 20:
+                if 0.0 < self.distAhead < 10:
                     self.state = "ENCOUNTER_WALL"
             
-            self.new_turn = True
-            self.state = "FOLLOW_LEFT_WALL"
-            print('we are so back')
+            if int(target_heading_bounds[1]) <= self.heading <= int(target_heading_bounds[0]):
+                self.new_turn = True
+                self.state = "FOLLOW_LEFT_WALL"
+                print('we are so back')
 
             # If it is inside of these bounds, then it will stop turning, and continue following the wall
             # we need to add more statements to figure out if it is hinged on a wall nearby or something similar,
@@ -195,11 +198,9 @@ class StateMachine:
             # print(f'speeds ({self.left_speed}, {self.right_speed})')
             # print(f'target {self.target_heading}\nbounds {target_heading_bounds[0]} {target_heading_bounds[1]}\ncurrent heading {self.heading}')
 
-            print(
-                f'target {self.target_heading}\nbounds {target_heading_bounds[0]} {target_heading_bounds[1]}\ncurrent heading {self.heading}')
+            print(f'target {self.target_heading}\nbounds {target_heading_bounds[0]} {target_heading_bounds[1]}\ncurrent heading {self.heading}')
             drivetrain.set_speed(self.left_speed, self.right_speed)
-        elif self.state == 'KINDERGARTEN':
-            self.color = color.getRGBLux()
+
 sm = StateMachine()
 
 
