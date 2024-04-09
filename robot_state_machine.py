@@ -175,21 +175,20 @@ class StateMachine:
 			# print(f'{int(target_heading_bounds[1]) <= self.heading <= int(target_heading_bounds[0])}')
 
 			while self.heading not in range(int(target_heading_bounds[1]), int(target_heading_bounds[0])):
-			    self.right_speed = -1 * self.target_speed
+		        print(f'In range is {self.heading in range(int(target_heading_bounds[1]), int(target_heading_bounds[0]))}')
+                self.right_speed = -1 * self.target_speed
 			    self.left_speed = self.target_speed
-			if int(target_heading_bounds[0]) <= self.heading <= int(target_heading_bounds[1]):
-			    self.new_turn = True
-    			self.state = "FOLLOW_LEFT_WALL"
-    			print('we are so back')
+                if 1.0 < self.distAhead < 20:
+                    self.state = "ENCOUNTER_WALL"
+            
+            self.new_turn = True
+    		self.state = "FOLLOW_LEFT_WALL"
+    		print('we are so back')
 
 			# If it is inside of these bounds, then it will stop turning, and continue following the wall
 			# we need to add more statements to figure out if it is hinged on a wall nearby or something similar,
 			# so that it becomes a non interupting turn in regards to the rest of the program
 			# elif self.heading in range(target_heading_bounds[1], target_heading_bounds[0]):
-
-			if 1.0 < self.distAhead < 20:
-				self.state = "ENCOUNTER_WALL"
-
 			# else:
 			#     self.right_speed = -1 * self.target_speed
 			#     self.left_speed =  self.target_speed
