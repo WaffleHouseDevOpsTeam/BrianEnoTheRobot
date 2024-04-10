@@ -1,7 +1,7 @@
 from XRPLib.defaults import *
 from GFULib.defaults import *
 import time
-
+# We need to make the code work for following left and right hand wall, as well as basically  make brian eno ambidextruous
 
 class StateMachine:
     # The State variable. Start the state in the RESET state
@@ -159,6 +159,11 @@ class StateMachine:
             # self.new_turn = True
             # print(f'{self.heading}/{self.target_heading} ({self.right_speed}, {self.left_speed}) - start a turn')
             self.state = "TURN_LEFT"
+
+        elif self.state == "KINDERGARTEN":
+            self.color = color.getRGBlux()
+            print(self.color)
+            # we need to then have the LED on the robot light up
 
         elif self.state == "TURN_LEFT":
 
