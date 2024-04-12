@@ -12,7 +12,6 @@ class StateMachine:
 
 	prev_head_diff = 1000000
 	head_diff = 3000000
-	target_heading = 90
 	# Initial motor speeds
 	target_speed = 30
 	turn_around_speed = 40
@@ -175,10 +174,10 @@ class StateMachine:
 			self.state = "TURN_LEFT"
 
 		elif self.state == "TURN_LEFT":
-		    
+
 			self.target_heading = abs(self.heading - self.turn_angle) % 360
 			accurcy_perc = 5
-			
+
 			target_heading_bounds = [self.target_heading + (self.target_heading * 0.01 * accurcy_perc),
 			                         self.target_heading - (self.target_heading * 0.01 * accurcy_perc)]
 
@@ -187,21 +186,22 @@ class StateMachine:
 
 			if not int(target_heading_bounds[1]) <= self.heading <= int(target_heading_bounds[0]):
 				print(f'In range is false skjdh')
-				self.right_speed = -1 * self.target_speed
-				self.left_speed = self.target_speed
-				# if 0.0 < self.distAhead < 10:
-				# 	self.state = "ENCOUNTER_WALL"
+				self.right_speed = self.target_speed
+				self.left_speed = -1 * self.target_speed
+			if 0.0 < self.distAhead < 10:
+				self.state = "ENCOUNTER_WALL"
 
 			if int(target_heading_bounds[1]) <= self.heading <= int(target_heading_bounds[0]):
 				if self.currentZone == 0:
-				    print("we're super straight you guys")
-				    self.state = "ZONEFINDER_STRAIGHTAWAY"
+					print("going straight")
+					self.state = "ZONEFINDER_STRAIGHTAWAY"
 				elif self.currentZone == 1:
 					self.new_turn = True
-    				self.state = "FOLLOW_LEFT_WALL"
-    				print('we are so back')
+				self.state = "FOLLOW_LEFT_WALL"
+				print('we are so back')
 
-			print(f'target {self.target_heading}\nbounds {target_heading_bounds[0]} {target_heading_bounds[1]}\ncurrent heading {self.heading}')
+			print(
+				f'target {self.target_heading}\nbounds {target_heading_bounds[0]} {target_heading_bounds[1]}\ncurrent heading {self.heading}')
 			drivetrain.set_speed(self.left_speed, self.right_speed)
 		elif self.state == "RED_SEARCHING":
 			currentCol = color.getColor()
@@ -220,11 +220,12 @@ class StateMachine:
 				self.state = "GREEN_DETECTED"
 
 		elif self.state == "GREEN_DETECTED":
-		    self.currentZone = 0
-		    self.turn_angle = 180
-		    self.state = "TURN_LEFT"
+			self.currentZone = 0
+			self.turn_angle = 180
+			self.state = "TURN_LEFT"
 
 		elif self.state == "ZONEFINDER_STRAIGHTAWAY":
+# 			drivetrain.turn(180, 1, 5)
 			dist_trav_left = 0
 			dist_trav_right = 0
 			current_dist_trav = (dist_trav_right + dist_trav_left) / 2
@@ -232,6 +233,7 @@ class StateMachine:
 			self.left_speed = self.target_speed
 			self.right_speed = self.target_speed
 			drivetrain.set_speed(self.left_speed, self.right_speed)
+
 
 sm = StateMachine()
 
