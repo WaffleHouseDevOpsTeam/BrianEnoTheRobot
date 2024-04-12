@@ -9,10 +9,11 @@ class StateMachine:
 	# This is used to save the name of the current state
 	stateName = ""
 	new_turn = True
-
+    
 	prev_head_diff = 1000000
 	head_diff = 3000000
 	target_heading = 90
+    turn_angle = 90
 	# Initial motor speeds
 	target_speed = 30
 	turn_around_speed = 40
@@ -26,7 +27,7 @@ class StateMachine:
 
 	# The time in ms between each read of the sensors.
 	read_ms = 10
-
+    
 	# The distance readout from each sensor
 	distAhead = 0  # Rangefinder
 	distRight = 0  # Proximity0
@@ -166,12 +167,14 @@ class StateMachine:
 			self.print_state("Encounter Wall")
 			# if self.new_turn == True:
 			drivetrain.straight(5, -1)
-			(self.target_heading) = abs(self.heading - 90) % 360
+            self.turn_angle = 90
+            # self.target_heading = abs(self.heading - self.turn_angle) % 360
 			# self.new_turn = True
 			# print(f'{self.heading}/{self.target_heading} ({self.right_speed}, {self.left_speed}) - start a turn')
 			self.state = "TURN_LEFT"
 
 		elif self.state == "TURN_LEFT":
+            self.target_heading = abs(self.heading - self.turn_angle) % 360
 
 			# This is a value that that gives the percent difference we can allow in a full turn
 			accurcy_perc = 5
@@ -228,14 +231,16 @@ class StateMachine:
 				self.state = "GREEN_DETECTED"
 
 		elif self.state == "GREEN_DETECTED":
-			turn_around_target = 180
+			self.turn_angle = 180
+            self.state = "TURN_LEFT"
+            """
 			accurcy_perc = 5
 			turnaroundbounds = [self.target_heading + (turn_around_target * 0.01 * accurcy_perc),
 			           self.target_heading - (turn_around_target * 0.01 * accurcy_perc)]
 
 			print(turnaroundbounds[1], '-', turnaroundbounds[0])
 			print(f'Range is {turnaroundbounds[1]} - {turnaroundbounds[0]}. Heading is {self.heading}. In range is {self.heading in range(int(turnaroundbounds[1]), int(turnaroundbounds[0]))}')
-
+            # This needs to be a separate state I think, in order to keep the code cleaner and more scalable.
 			if not int(turnaroundbounds[1]) <= self.heading <= int(turnaroundbounds[0]):
 				print(f'Turning 180')
 				self.right_speed = self.turn_around_speed
@@ -249,6 +254,7 @@ class StateMachine:
 				# it's hit target heading, so it needs to go straight
 			 #   self.state = "ZONEFINDER_STRAIGHTAWAY"
 			    self.state = "VEER_TOWARD_LEFT_WALL"
+            """
 		elif self.state == "ZONEFINDER_STRAIGHTAWAY":
 		    # set distance traveled to 0, start tracking it
 		    dist_trav_left = 0
