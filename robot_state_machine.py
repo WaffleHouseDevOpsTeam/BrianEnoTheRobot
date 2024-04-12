@@ -19,6 +19,7 @@ class StateMachine:
 	right_speed = target_speed
 	currentZone = 0
 	turn_around_target = 0
+	newPrint = True
 
 	# Proximity values for wall following
 	proximity_center = 500  # The ideal value we want to read
@@ -166,18 +167,19 @@ class StateMachine:
 		elif self.state == "ENCOUNTER_WALL":
 			self.print_state("Encounter Wall")
 			# if self.new_turn == True:
-			self.turn_angle = 90
+			if self.currentZone == 0:
+			    self.turn_angle = 180
+			else: 
+			    self.turn_angle = 90
 			drivetrain.straight(5, -1)
-			# (self.target_heading) = abs(self.heading - 90) % 360
-			# self.new_turn = True
-			# print(f'{self.heading}/{self.target_heading} ({self.right_speed}, {self.left_speed}) - start a turn')
 			self.state = "TURN_LEFT"
 
 		elif self.state == "TURN_LEFT":
-
 			self.target_heading = abs(self.heading - self.turn_angle) % 360
 			accurcy_perc = 5
-
+            if self.newPrint == True:
+		        print(f'turn angle is {self.turn_angle}, self_heading is {self.heading}, target heading is {self.target_heading})
+		        self.newPrint == False
 			target_heading_bounds = [self.target_heading + (self.target_heading * 0.01 * accurcy_perc),
 			                         self.target_heading - (self.target_heading * 0.01 * accurcy_perc)]
 
@@ -222,7 +224,7 @@ class StateMachine:
 		elif self.state == "GREEN_DETECTED":
 			self.currentZone = 0
 			self.turn_angle = 180
-			self.state = "TURN_LEFT"
+			self.state = "ENCOUNTER_WALL"
 
 		elif self.state == "ZONEFINDER_STRAIGHTAWAY":
 # 			drivetrain.turn(180, 1, 5)
