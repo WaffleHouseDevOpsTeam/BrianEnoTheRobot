@@ -9,16 +9,17 @@ class StateMachine:
 	# This is used to save the name of the current state
 	stateName = ""
 	new_turn = True
-    
+
 	prev_head_diff = 1000000
 	head_diff = 3000000
 	target_heading = 90
-    turn_angle = 90
 	# Initial motor speeds
 	target_speed = 30
 	turn_around_speed = 40
 	left_speed = target_speed
 	right_speed = target_speed
+	currentZone = 0
+	turn_around_target = 0
 
 	# Proximity values for wall following
 	proximity_center = 500  # The ideal value we want to read
@@ -27,7 +28,7 @@ class StateMachine:
 
 	# The time in ms between each read of the sensors.
 	read_ms = 10
-    
+
 	# The distance readout from each sensor
 	distAhead = 0  # Rangefinder
 	distRight = 0  # Proximity0
@@ -166,24 +167,18 @@ class StateMachine:
 		elif self.state == "ENCOUNTER_WALL":
 			self.print_state("Encounter Wall")
 			# if self.new_turn == True:
+			self.turn_angle = 90
 			drivetrain.straight(5, -1)
-            self.turn_angle = 90
-            # self.target_heading = abs(self.heading - self.turn_angle) % 360
+			# (self.target_heading) = abs(self.heading - 90) % 360
 			# self.new_turn = True
 			# print(f'{self.heading}/{self.target_heading} ({self.right_speed}, {self.left_speed}) - start a turn')
 			self.state = "TURN_LEFT"
 
 		elif self.state == "TURN_LEFT":
-            self.target_heading = abs(self.heading - self.turn_angle) % 360
-
-			# This is a value that that gives the percent difference we can allow in a full turn
+		    
+			self.target_heading = abs(self.heading - self.turn_angle) % 360
 			accurcy_perc = 5
-
-			# These bounds use the accurcy perc variable mentioned above make upper and lower limit targets for the heading of our robot.
-			# This is what all of the if statements are looking at to see if it has completed a full turn
-
-			# If it is outside of the bounds, it keeps turning.
-
+			
 			target_heading_bounds = [self.target_heading + (self.target_heading * 0.01 * accurcy_perc),
 			                         self.target_heading - (self.target_heading * 0.01 * accurcy_perc)]
 
@@ -194,26 +189,19 @@ class StateMachine:
 				print(f'In range is false skjdh')
 				self.right_speed = -1 * self.target_speed
 				self.left_speed = self.target_speed
-				if 0.0 < self.distAhead < 10:
-					self.state = "ENCOUNTER_WALL"
+				# if 0.0 < self.distAhead < 10:
+				# 	self.state = "ENCOUNTER_WALL"
 
 			if int(target_heading_bounds[1]) <= self.heading <= int(target_heading_bounds[0]):
-				self.new_turn = True
-				self.state = "FOLLOW_LEFT_WALL"
-				print('we are so back')
+				if self.currentZone == 0:
+				    print("we're super straight you guys")
+				    self.state = "ZONEFINDER_STRAIGHTAWAY"
+				elif self.currentZone == 1:
+					self.new_turn = True
+    				self.state = "FOLLOW_LEFT_WALL"
+    				print('we are so back')
 
-			# If it is inside of these bounds, then it will stop turning, and continue following the wall
-			# we need to add more statements to figure out if it is hinged on a wall nearby or something similar,
-			# so that it becomes a non interupting turn in regards to the rest of the program
-			# elif self.heading in range(target_heading_bounds[1], target_heading_bounds[0]):
-			# else:
-			#     self.right_speed = -1 * self.target_speed
-			#     self.left_speed =  self.target_speed
-			# print(f'speeds ({self.left_speed}, {self.right_speed})')
-			# print(f'target {self.target_heading}\nbounds {target_heading_bounds[0]} {target_heading_bounds[1]}\ncurrent heading {self.heading}')
-
-			print(
-				f'target {self.target_heading}\nbounds {target_heading_bounds[0]} {target_heading_bounds[1]}\ncurrent heading {self.heading}')
+			print(f'target {self.target_heading}\nbounds {target_heading_bounds[0]} {target_heading_bounds[1]}\ncurrent heading {self.heading}')
 			drivetrain.set_speed(self.left_speed, self.right_speed)
 		elif self.state == "RED_SEARCHING":
 			currentCol = color.getColor()
@@ -221,6 +209,7 @@ class StateMachine:
 			if currentCol == 'red':
 				print("Found red")
 				self.state = "GREEN_SEARCHING"
+
 		elif self.state == "GREEN_SEARCHING":
 			currentCol = color.getColor()
 			print(f'current color is {currentCol}')
@@ -231,41 +220,18 @@ class StateMachine:
 				self.state = "GREEN_DETECTED"
 
 		elif self.state == "GREEN_DETECTED":
-			self.turn_angle = 180
-            self.state = "TURN_LEFT"
-            """
-			accurcy_perc = 5
-			turnaroundbounds = [self.target_heading + (turn_around_target * 0.01 * accurcy_perc),
-			           self.target_heading - (turn_around_target * 0.01 * accurcy_perc)]
+		    self.currentZone = 0
+		    self.turn_angle = 180
+		    self.state = "TURN_LEFT"
 
-			print(turnaroundbounds[1], '-', turnaroundbounds[0])
-			print(f'Range is {turnaroundbounds[1]} - {turnaroundbounds[0]}. Heading is {self.heading}. In range is {self.heading in range(int(turnaroundbounds[1]), int(turnaroundbounds[0]))}')
-            # This needs to be a separate state I think, in order to keep the code cleaner and more scalable.
-			if not int(turnaroundbounds[1]) <= self.heading <= int(turnaroundbounds[0]):
-				print(f'Turning 180')
-				self.right_speed = self.turn_around_speed
-				self.left_speed = -1* self.turn_around_speed
-				drivetrain.set_speed(self.left_speed, self.right_speed)
-				if 0.0 < self.distAhead < 10:
-					target_distance = 10
-					# if (self.distance_traveled)
-					# 	pass
-			if int(turnaroundbounds[1]) <= self.heading <= int(turnaroundbounds[0]):
-				# it's hit target heading, so it needs to go straight
-			 #   self.state = "ZONEFINDER_STRAIGHTAWAY"
-			    self.state = "VEER_TOWARD_LEFT_WALL"
-            """
 		elif self.state == "ZONEFINDER_STRAIGHTAWAY":
-		    # set distance traveled to 0, start tracking it
-		    dist_trav_left = 0
-		    dist_trav_right = 0
-		    current_dist_trav = (dist_trav_right + dist_trav_left) / 2
-		    print(current_dist_trav)
-		  #  if 0.0 < self.distAhead < 10:
-		  #      self.state = ""
-		    
-		    
-	
+			dist_trav_left = 0
+			dist_trav_right = 0
+			current_dist_trav = (dist_trav_right + dist_trav_left) / 2
+			print(current_dist_trav)
+			self.left_speed = self.target_speed
+			self.right_speed = self.target_speed
+			drivetrain.set_speed(self.left_speed, self.right_speed)
 
 sm = StateMachine()
 
