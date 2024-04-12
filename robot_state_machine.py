@@ -169,17 +169,20 @@ class StateMachine:
 			# if self.new_turn == True:
 			if self.currentZone == 0:
 			    self.turn_angle = 180
-			else: 
+			else:
 			    self.turn_angle = 90
 			drivetrain.straight(5, -1)
 			self.state = "TURN_LEFT"
 
 		elif self.state == "TURN_LEFT":
-			self.target_heading = abs(self.heading - self.turn_angle) % 360
+		    if self.currentZone == 0:
+		        self.target_heading = abs(self.heading + self.turn_angle) % 360
+		    else:
+		        self.target_heading = abs(self.heading - self.turn_angle) % 360
 			accurcy_perc = 5
-            if self.newPrint == True:
-		        print(f'turn angle is {self.turn_angle}, self_heading is {self.heading}, target heading is {self.target_heading})
-		        self.newPrint == False
+			if self.newPrint == True:
+			    print(f'turn angle is {self.turn_angle}, self_heading is {self.heading}, target heading is {self.target_heading}')
+			    self.newPrint == False
 			target_heading_bounds = [self.target_heading + (self.target_heading * 0.01 * accurcy_perc),
 			                         self.target_heading - (self.target_heading * 0.01 * accurcy_perc)]
 
