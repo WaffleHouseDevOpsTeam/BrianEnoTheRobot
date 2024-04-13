@@ -57,7 +57,9 @@ class StateMachine:
 
 	# We want to have a function that prints the state name for debugging
 	# But only when we enter it - not every time through - that would be crazy
-	def print_state(self, newState):
+    def print_debug(self):
+        print(f'{self.stateName}')
+    def print_state(self, newState):
 		if newState != self.stateName:
 			print(f"Entering state {newState}")
 			self.stateName = newState
