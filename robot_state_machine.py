@@ -1,7 +1,7 @@
 from XRPLib.defaults import *
 from GFULib.defaults import *
 import time
-
+from datatime import data, time, datetime
 
 class StateMachine:
     # The State variable. Start the state in the RESET state
@@ -39,7 +39,7 @@ class StateMachine:
 
     # and a dictionary to hold the times when each of the sensors were last updated
     update_time = {}
-
+    
     def __init__(self):
         # get the current time at the start
         current_time = time.ticks_ms()
@@ -57,18 +57,35 @@ class StateMachine:
 
     # We want to have a function that prints the state name for debugging
     # But only when we enter it - not every time through - that would be crazy
+    
+    # This may seem redundent currently, but when implementing wireless communications
+    # this set up will be very useful
     def wprint(self, x):
         print(x)
     
-    def print_debug(self):
-        wprint(f'{self.stateName}')
-        wprint(f'Heading: {self.heading}')
-        wprint(f'Target Heading: {self.target_heading}')
-        wprint(f'Dist - A: {self.distAhead} L: {self.distLeft} R: {self.distRight}')
-        wprint(f'Dist Traveled - {self.dist_trav_left} {dist_trav_right}')
-        wprint(f'Speed: {self.left_speed} {self.right_speed}')
+    def get_debug(self):
+        return f'{self.stateName}\n
+                Heading: {self.heading}\n
+                Target Heading: {self.target_heading}\n
+                Dist - A: {self.distAhead} L: {self.distLeft} R: {self.distRight}\n
+                Dist Traveled - {self.dist_trav_left} {dist_trav_right}\n
+                Speed: {self.left_speed} {self.right_speed}\n'
+    def get_time(self):
+        today = date.now()
+        format_date = f'{today.year}-{today.month}-{today.day}-{today.hour}-{today.minute}-{today.second}':2f
+        return format_date
+        
+    def make_log(self):
+        log = open(f'{get_time}_log.csv', 'w')
+        log.write(f'{get_time})
     
-    def print_state(self, newState):
+    def write_log(self):
+        log.write(get_debug)
+
+    def print_debug(self):
+        wprint(get_debug)
+
+    def print_state(self):
         if newState != self.stateName:
             print(f"Entering state {newState}")
             self.stateName = newState
@@ -252,7 +269,7 @@ class StateMachine:
 
 
 sm = StateMachine()
-
+make_log()
 while True:
     sm.update_sensors()
     print(sm.right_speed)
