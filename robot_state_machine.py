@@ -78,7 +78,7 @@ class StateMachine:
         return format_date
         
     def make_log(self):
-        log = open(f'{get_time}_log.csv', 'w')
+        log = open(f'logs\{get_time}_log.csv', 'w')
         log.write(f'{get_time})
     
     def write_log(self):
