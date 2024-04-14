@@ -64,12 +64,14 @@ class StateMachine:
         print(x)
     
     def get_debug(self):
-        return f'{self.stateName}\n
+        return f'{self.stateName} - {self.current_zone}\n
                 Heading: {self.heading}\n
                 Target Heading: {self.target_heading}\n
                 Dist - A: {self.distAhead} L: {self.distLeft} R: {self.distRight}\n
                 Dist Traveled - {self.dist_trav_left} {dist_trav_right}\n
-                Speed: {self.left_speed} {self.right_speed}\n'
+                Speed: {self.left_speed} {self.right_speed}\n
+                Color: {self.currentCol}\n'
+
     def get_time(self):
         today = date.now()
         format_date = f'{today.year}-{today.month}-{today.day}-{today.hour}-{today.minute}-{today.second}':2f
@@ -173,7 +175,6 @@ class StateMachine:
 
         elif self.state == "VEER_TOWARD_LEFT_WALL":
             self.print_state("VEER_TOWARD_LEFT_WALL")
-            print('dist=', self.distAhead)
             if 0.0 < self.distAhead < 20.0:
                 self.state = "ENCOUNTER_WALL"
             if self.right_speed < 40:
@@ -189,7 +190,7 @@ class StateMachine:
                 self.right_speed = self.target_speed
                 drivetrain.set_speed(self.target_speed, self.target_speed)
                 self.state = "FOLLOW_LEFT_WALL"
-                print('dist=', self.distAhead)
+ 
                 drivetrain.set_speed(self.left_speed, self.right_speed)
 
         elif self.state == "ENCOUNTER_WALL":
@@ -209,16 +210,12 @@ class StateMachine:
                 self.target_heading = abs(self.heading - self.turn_angle) % 360
             accurcy_perc = 5
             if self.newPrint == True:
-                print(f'turn angle is {self.turn_angle}, self_heading is {self.heading}, target heading is {self.target_heading}')
                 self.newPrint == False
             target_heading_bounds = [self.target_heading + (self.target_heading * 0.01 * accurcy_perc),
                                      self.target_heading - (self.target_heading * 0.01 * accurcy_perc)]
 
-            print(target_heading_bounds[1], '-', target_heading_bounds[0])
-            print(f'In range is {self.heading in range(int(target_heading_bounds[1]), int(target_heading_bounds[0]))}')
-
             if not int(target_heading_bounds[1]) <= self.heading <= int(target_heading_bounds[0]):
-                print(f'In range is false skjdh')
+                #print(f'In range is false skjdh')
                 self.right_speed = self.target_speed
                 self.left_speed = -1 * self.target_speed
             if 0.0 < self.distAhead < 10:
@@ -226,28 +223,24 @@ class StateMachine:
 
             if int(target_heading_bounds[1]) <= self.heading <= int(target_heading_bounds[0]):
                 if self.currentZone == 0:
-                    print("going straight")
+                    wprint("going straight")
                     self.state = "ZONEFINDER_STRAIGHTAWAY"
                 elif self.currentZone == 1:
                     self.new_turn = True
                 self.state = "FOLLOW_LEFT_WALL"
-                print('we are so back')
+                wprint('we are so back')
 
-            print(
-                f'target {self.target_heading}\nbounds {target_heading_bounds[0]} {target_heading_bounds[1]}\ncurrent heading {self.heading}')
-            drivetrain.set_speed(self.left_speed, self.right_speed)
+                drivetrain.set_speed(self.left_speed, self.right_speed)
         elif self.state == "RED_SEARCHING":
             currentCol = color.getColor()
-            print(f'current color is {currentCol}')
             if currentCol == 'red':
-                print("Found red")
+                wprint("Found red")
                 self.state = "GREEN_SEARCHING"
 
         elif self.state == "GREEN_SEARCHING":
             currentCol = color.getColor()
-            print(f'current color is {currentCol}')
             if currentCol == 'red':
-                print("I'm red-y")
+               wprint("I'm red-y")
                 self.state = "GREEN_SEARCHING"
             if currentCol == 'green':
                 self.state = "GREEN_DETECTED"
@@ -262,17 +255,16 @@ class StateMachine:
             dist_trav_left = 0
             dist_trav_right = 0
             current_dist_trav = (dist_trav_right + dist_trav_left) / 2
-            print(current_dist_trav)
             self.left_speed = self.target_speed
             self.right_speed = self.target_speed
             drivetrain.set_speed(self.left_speed, self.right_speed)
 
 
 sm = StateMachine()
-make_log()
+sm.make_log()
+
 while True:
     sm.update_sensors()
-    print(sm.right_speed)
-    # print(str(sm.heading))
-    # print(sm.state)
     sm.evaluate_state()
+    sm.print_debug()
+    sm.write_log()
