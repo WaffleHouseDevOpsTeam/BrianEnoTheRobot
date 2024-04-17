@@ -39,11 +39,9 @@ class StateMachine:
 	turn_around_speed = 40
 	left_speed = target_speed
 	right_speed = target_speed
-	currentZone = 0
-	turn_around_target = 0
 	newPrint = True
 	previousState = ''
-	wallCrawlMode = ''
+	wallCrawlMode = 'right'
 
 	# Proximity values for wall following
 	proximity_center = 500  # The ideal value we want to read
@@ -201,7 +199,7 @@ class StateMachine:
 			self.state = "TURN_LEFT"
 
 		elif self.state == "TURN_LEFT":
-			self.turn_angle = 90
+			self.turn_angle = 45
 			print('turning left')
 			if self.new_turn == True:
 				self.target_heading = abs(self.heading + self.turn_angle) % 360
