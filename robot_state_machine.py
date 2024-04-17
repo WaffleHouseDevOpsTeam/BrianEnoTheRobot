@@ -113,22 +113,23 @@ class StateMachine:
 			self.update_time["distance_traveled_right"] += self.read_ms
 			self.dist_trav_right = drivetrain.get_right_encoder_position()
 
-	def define_course(self, accuracy):
-		self.course_range = [self.heading - (accuracy * 0.01 * self.heading),
-		                     self.heading + (accuracy * 0.01 * self.heading)]
-
-	def stay_straight(self):
-		print(self.heading)
-		print(self.course_range)
-		if self.heading <= self.course_range[0]:
-			drivetrain.set_speed(self.target_speed, self.target_speed - 15)
-			print('slight left')
-		elif self.heading >= self.course_range[1]:
-			drivetrain.set_speed(self.target_speed - 15, self.target_speed)
-			print('slight right')
-		else:
-			drivetrain.set_speed(self.target_speed, self.target_speed)
-			print('staying straight')
+	# def define_course(self, accuracy):
+	# 	self.course_range = [self.heading - (accuracy * 0.01 * self.heading),
+	# 	                     self.heading + (accuracy * 0.01 * self.heading)]
+	#
+	# def stay_straight(self):
+	# 	print(self.heading)
+	# 	print(self.course_range)
+	# 	if self.heading <= self.course_range[0]:
+	# 		drivetrain.set_speed(self.target_speed, self.target_speed - 25)
+	# 		print('slight left')
+	# 	elif self.heading >= self.course_range[1]:
+	# 		drivetrain.set_speed(self.target_speed - 25, self.target_speed)
+	# 		print('slight right')
+	# 	else:
+	# 		drivetrain.set_speed(self.target_speed, self.target_speed)
+	# 		print('staying straight')
+	# 	# the problem is that the speeds arent accurate???? but this doesn't seem to fix :(
 
 	def evaluate_state(self):
 		# It might behoove you to verify that the self.state variable has been set to a legal
@@ -172,11 +173,11 @@ class StateMachine:
 				if self.wallCrawlMode == 'left':
 					if self.left_speed < 40:
 						self.left_speed = self.left_speed + (
-									(abs(self.proximity_center - self.distLeft) / self.proximity_center) * .1)
+								(abs(self.proximity_center - self.distLeft) / self.proximity_center) * .1)
 				if self.wallCrawlMode == 'right':
 					if self.right_speed < 40:
 						self.right_speed = self.right_speed + (
-									(abs(self.proximity_center - self.distRight) / self.proximity_center) * .1)
+								(abs(self.proximity_center - self.distRight) / self.proximity_center) * .1)
 				drivetrain.set_speed(self.left_speed, self.right_speed)
 
 			# Once we see the value is within tolerance, immediately reset the speed (to keep it straight)
@@ -197,14 +198,14 @@ class StateMachine:
 			if self.wallCrawlMode == 'left':
 				if self.right_speed < 40:
 					self.right_speed = self.right_speed + (
-								(abs(self.proximity_center - self.distLeft) / self.proximity_center) * .1)
+							(abs(self.proximity_center - self.distLeft) / self.proximity_center) * .1)
 				if (abs(self.heading - initialHeading) >= 80):
 					if self.previousState == 'ZONEFINDER_STRAIGHTAWAY':
 						self.state = 'ENTERING_ZONE2'
 			if self.wallCrawlMode == 'right':
 				if self.left_speed < 40:
 					self.left_speed = self.left_speed + (
-								(abs(self.proximity_center - self.distRight) / self.proximity_center) * .1)
+							(abs(self.proximity_center - self.distRight) / self.proximity_center) * .1)
 			drivetrain.set_speed(self.left_speed, self.right_speed)
 
 			# Once we see the value is within tolerance, immediately reset the speed (to keep it straight)
@@ -221,14 +222,14 @@ class StateMachine:
 
 		elif self.state == "ENCOUNTER_WALL":
 			drivetrain.straight(5, -1)
-			self.state = "TURN_LEFT"
+			self.state = "TURNING"
 
-		elif self.state == "TURN_LEFT":
+		elif self.state == "TURNING":
 			if self.wallCrawlMode == 'left':
-				self.turn_angle = 45
+				self.turn_angle = 90
 				turning = 'right'
 			if self.wallCrawlMode == 'right':
-				self.turn_angle = -45
+				self.turn_angle = -90
 				turning = 'left'
 			print(f'turning {turning} at an angle of {self.turn_angle} degrees')
 			if self.new_turn == True:
@@ -253,8 +254,9 @@ class StateMachine:
 					self.right_speed = self.target_speed
 					self.left_speed = -1 * self.target_speed
 			if 0.0 < self.distAhead < 5:
-				self.new_turn = True
-				self.state = "ENCOUNTER_WALL"
+				drivetrain.straight(5, -1)
+			# self.new_turn = True
+			# self.state = "ENCOUNTER_WALL"
 			if int(target_heading_small) <= self.heading <= int(target_heading_big):
 				self.new_turn = True
 				print('we are so back')
@@ -289,16 +291,18 @@ class StateMachine:
 			self.previousState = self.state
 			self.currentZone = 0
 			drivetrain.turn(180, -1, 5)
-			self.define_course(5)
+			# self.define_course(5)
 			self.state = "ZONEFINDER_STRAIGHTAWAY"
 
 		elif self.state == "ZONEFINDER_STRAIGHTAWAY":
 			self.previousState = self.state
-			self.stay_straight()
-			if (0.0 < self.distAhead < 20.0) and (self.distLeft < self.distRight):
+			while self.distAhead >= 10.0:
+				drivetrain.set_speed(self.target_speed, self.target_speed)
+			# self.stay_straight()
+			if (0.0 < self.distAhead < 10.0) and (self.distLeft < self.distRight):
 				self.wallCrawlMode = 'left'
 				self.state = "ENCOUNTER_WALL"
-			elif (0.0 < self.distAhead < 20.0) and (self.distLeft > self.distRight):
+			elif (0.0 < self.distAhead < 10.0) and (self.distLeft > self.distRight):
 				self.wallCrawlMode = 'right'
 				self.state = 'ENCOUNTER_WALL'
 			else:
@@ -328,12 +332,13 @@ class StateMachine:
 			# if it hits zone 3 (how do we know this?), next state
 			pass
 
-
+imu.calibrate(1,1)
 sm = StateMachine()
 
 while True:
+    if 
 	sm.update_sensors()
-	print(sm.right_speed)
+	# print(sm.right_speed)
 	# print(str(sm.heading))
 	print(sm.state)
 	sm.evaluate_state()
