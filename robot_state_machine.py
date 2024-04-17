@@ -42,6 +42,8 @@ class StateMachine:
 	currentZone = 0
 	turn_around_target = 0
 	newPrint = True
+	previousState = ''
+	wallCrawlMode = ''
 
 	# Proximity values for wall following
 	proximity_center = 500  # The ideal value we want to read
@@ -122,77 +124,79 @@ class StateMachine:
 		if self.state == "RESET":
 			self.print_state("RESET")
 			drivetrain.set_speed(self.target_speed, self.target_speed)
-			self.state = "FOLLOW_LEFT_WALL"
+			self.state = "FOLLOW_WALL"
 
-		elif self.state == "FOLLOW_LEFT_WALL":
+		elif self.state == "FOLLOW_WALL":
 			self.right_speed = self.target_speed
 			self.left_speed = self.target_speed
-			print('following left wall')
-			self.print_state("FOLLOW_LEFT_WALL")
+			print(f'following wall, wallCrawlMode is {self.wallCrawlMode}')
 			# If there is something within 10 cm ahead (and we are getting a legit reading that isn't 0):
 			if 0.0 < self.distAhead < 20.0:
 				self.state = "ENCOUNTER_WALL"
 			# If we are getting too close to the left wall (number getting bigger)
-			elif self.distLeft > self.proximity_center + self.proximity_range / 2:
-				self.state = "VEER_AWAY_FROM_LEFT_WALL"
+			elif (self.distLeft > self.proximity_center + self.proximity_range / 2) and (self.distRight > 10.0):
+				self.state = "VEER_AWAY_FROM_WALL"
 			# If we are too far away from the left wall (number getting smaller)
-			elif self.distLeft < self.proximity_center - self.proximity_range / 2:
-				self.state = "VEER_TOWARD_LEFT_WALL"
-		# elif self.distAhead == 0.0:
-		#     print('rangefinder broken :\(')
-		# Otherwise, we just stay in this happy little state :)
+			elif (self.distLeft < self.proximity_center - self.proximity_range / 2) and (self.distRight > 10.0):
+				self.state = "VEER_TOWARD_WALL"
+			elif (self.distRight > self.proximity_center + self.proximity_range / 2) and (self.distLeft > 10.0):
+				self.state = "VEER_AWAY_FROM_WALL"
+			# If we are too far away from the left wall (number getting smaller)
+			elif (self.distRight < self.proximity_center - self.proximity_range / 2) and (self.distLeft > 10.0):
+				self.state = "VEER_TOWARD_WALL"
 
-		elif self.state == "VEER_AWAY_FROM_LEFT_WALL":
-			self.print_state("VEER_AWAY_FROM_LEFT_WALL")
+
+		elif self.state == "VEER_AWAY_FROM_WALL":
+			self.print_state("VEER_AWAY_FROM_WALL")
 			if 0.0 < self.distAhead < 20.0:
 				self.state = "ENCOUNTER_WALL"
 			if time.ticks_diff(current_time, self.update_time["state_interval"]) > self.read_ms:
 				self.update_time["state_interval"] = current_time
-				if self.left_speed < 40:
-					self.left_speed = self.left_speed + (
-							(abs(self.proximity_center - self.distLeft) / self.proximity_center) * .1)
-				# print(self.left_speed)
+				if self.wallCrawlMode == 'left':
+					if self.left_speed < 40:
+						self.left_speed = self.left_speed + ((abs(self.proximity_center - self.distLeft) / self.proximity_center) * .1)
+				if self.wallCrawlMode == 'right':
+					if self.right_speed < 40:
+						self.right_speed = self.right_speed + ((abs(self.proximity_center - self.distRight) / self.proximity_center) * .1)
 				drivetrain.set_speed(self.left_speed, self.right_speed)
 
 			# Once we see the value is within tolerance, immediately reset the speed (to keep it straight)
 			# And let's return to the state we came from - which is FOLLOW_LEFT
-			if self.distLeft <= self.proximity_center + self.proximity_range / 2:
-				# Reset the left and right speeds to target for a future veer session
+			if (self.distLeft <= self.proximity_center + self.proximity_range / 2) or (self.distRight <= self.proximity_center + self.proximity_range / 2):
 				self.left_speed = self.target_speed
 				self.right_speed = self.target_speed
-				# reset the motors to the target speed
 				drivetrain.set_speed(self.target_speed, self.target_speed)
-				# And head back to FOLLOW_LEFT
-				self.state = "FOLLOW_LEFT_WALL"
+				self.state = "FOLLOW_WALL"
 
-		elif self.state == "VEER_TOWARD_LEFT_WALL":
-			self.print_state("VEER_TOWARD_LEFT_WALL")
+		elif self.state == "VEER_TOWARD_WALL":
+			self.print_state("VEER_TOWARD_WALL")
 			print('dist=', self.distAhead)
+			initialHeading = self.heading
 			if 0.0 < self.distAhead < 20.0:
 				self.state = "ENCOUNTER_WALL"
-			if self.right_speed < 40:
-				self.right_speed = self.right_speed + (
-						(abs(self.proximity_center - self.distLeft) / self.proximity_center) * .1)
+			if self.wallCrawlMode == 'left':
+				if self.right_speed < 40:
+					self.right_speed = self.right_speed + ((abs(self.proximity_center - self.distLeft) / self.proximity_center) * .1)
+				if (abs(self.heading - initialHeading) >= 80):
+					if self.previousState == 'ZONEFINDER_STRAIGHTAWAY':
+						self.state = 'ENTERING_ZONE2'
+			if self.wallCrawlMode == 'right':
+				if self.left_speed < 40:
+					self.left_speed = self.left_speed + ((abs(self.proximity_center - self.distRight) / self.proximity_center) * .1)
 			drivetrain.set_speed(self.left_speed, self.right_speed)
 
 			# Once we see the value is within tolerance, immediately reset the speed (to keep it straight)
 			# And let's return to the state we came from - which is FOLLOW_LEFT
-			if self.distLeft >= self.proximity_center - self.proximity_range / 2:
+			if (self.distLeft >= self.proximity_center - self.proximity_range / 2) or (self.distRight >= self.proximity_center - self.proximity_range / 2):
 				# Reset the left and right speeds to target for a future veer session, set to target speed
 				self.left_speed = self.target_speed
 				self.right_speed = self.target_speed
 				drivetrain.set_speed(self.target_speed, self.target_speed)
-				self.state = "FOLLOW_LEFT_WALL"
+				self.state = "FOLLOW_WALL"
 				print('dist=', self.distAhead)
 				drivetrain.set_speed(self.left_speed, self.right_speed)
 
 		elif self.state == "ENCOUNTER_WALL":
-			self.print_state("Encounter Wall")
-			# if self.new_turn == True:
-			if self.currentZone == 0:
-				self.turn_angle = 180
-			else:
-				self.turn_angle = 90
 			drivetrain.straight(5, -1)
 			self.state = "TURN_LEFT"
 
@@ -201,8 +205,7 @@ class StateMachine:
 			self.target_heading = abs(self.heading + self.turn_angle) % 360
 			accurcy_perc = 5
 			if self.newPrint == True:
-				print(
-					f'turn angle is {self.turn_angle}, self_heading is {self.heading}, target heading is {self.target_heading}')
+				print(f'turn angle is {self.turn_angle}, self_heading is {self.heading}, target heading is {self.target_heading}')
 				self.newPrint == False
 			target_heading_bounds = [self.target_heading + (self.target_heading * 0.01 * accurcy_perc),
 			                         self.target_heading - (self.target_heading * 0.01 * accurcy_perc)]
@@ -214,23 +217,19 @@ class StateMachine:
 				print(f'In range is false skjdh')
 				self.right_speed = self.target_speed
 				self.left_speed = -1 * self.target_speed
-			if 0.0 < self.distAhead < 10:
+			if 0.0 < self.distAhead < 5:
 				self.state = "ENCOUNTER_WALL"
 
 			if int(target_heading_bounds[1]) <= self.heading <= int(target_heading_bounds[0]):
-				if self.currentZone == 0:
-					print("going straight")
-					self.state = "ZONEFINDER_STRAIGHTAWAY"
-				elif self.currentZone == 1:
-					self.new_turn = True
-				self.state = "FOLLOW_LEFT_WALL"
+				self.state = "FOLLOW_WALL"
 				print('we are so back')
 
-			print(
-				f'target {self.target_heading}\nbounds {target_heading_bounds[0]} {target_heading_bounds[1]}\ncurrent heading {self.heading}')
+			print(f'target {self.target_heading}\nbounds {target_heading_bounds[0]} {target_heading_bounds[1]}\ncurrent heading {self.heading}')
 			drivetrain.set_speed(self.left_speed, self.right_speed)
 
 		elif self.state == "RED_SEARCHING":
+			self.wallCrawlMode = 'left'
+			self.previousState = self.state
 			currentCol = color.getColor()
 			print(f'current color is {currentCol}')
 			if currentCol == 'red':
@@ -239,6 +238,7 @@ class StateMachine:
 				self.state = "GREEN_SEARCHING"
 
 		elif self.state == "GREEN_SEARCHING":
+			self.previousState = self.state
 			currentCol = color.getColor()
 			print(f'current color is {currentCol}')
 			if currentCol == 'red':
@@ -249,19 +249,25 @@ class StateMachine:
 				self.state = "GREEN_DETECTED"
 
 		elif self.state == "GREEN_DETECTED":
+			self.previousState = self.state
 			self.currentZone = 0
 			self.turn_angle = 180
 			drivetrain.turn(180, -1, 5)
 			self.state = "ZONEFINDER_STRAIGHTAWAY"
 
 		elif self.state == "ZONEFINDER_STRAIGHTAWAY":
-			dist_trav_left = 0
-			dist_trav_right = 0
-			current_dist_trav = (dist_trav_right + dist_trav_left) / 2
-			print(current_dist_trav)
-			self.left_speed = self.target_speed
-			self.right_speed = self.target_speed
-			drivetrain.set_speed(self.left_speed, self.right_speed)
+			self.previousState = self.state
+			drivetrain.set_speed(self.target_speed, self.target_speed)
+			if 0.0 < self.distAhead < 20.0:
+				self.state = "ENCOUNTER_WALL"
+			if self.distLeft < self.distRight:
+				self.wallCrawlMode = 'left'
+				self.state = 'FOLLOW_WALL'
+			elif self.distRight < self.distLeft:
+				self.wallCrawlMode = 'right'
+				self.state = 'FOLLOW_WALL'
+			else:
+				print('only in OHIO could this happen blud fr fr')
 
 		elif self.state == "HIT_LAST_ZONE1_WALL":
 			# it hits the wall keeping it from entering zone 2, prompting it to crawl the wall in search of a hole
@@ -283,7 +289,7 @@ class StateMachine:
 			# if it hits wall, crawl along it until it finds hole, next state
 			# if it hits zone 3 (how do we know this?), next state
 			pass
-		
+
 sm = StateMachine()
 
 while True:
