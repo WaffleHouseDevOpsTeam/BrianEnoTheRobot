@@ -234,7 +234,7 @@ class StateMachine:
 			currentCol = color.getColor()
 			print(f'current color is {currentCol}')
 			if currentCol == 'red':
-				setColor('red')
+				setColor(currentCol)
 				print("Found red")
 				self.state = "GREEN_SEARCHING"
 
@@ -245,7 +245,7 @@ class StateMachine:
 				print("I'm red-y")
 				self.state = "GREEN_SEARCHING"
 			if currentCol == 'green':
-				setColor('green')
+				setColor(currentCol)
 				self.state = "GREEN_DETECTED"
 
 		elif self.state == "GREEN_DETECTED":
@@ -263,6 +263,27 @@ class StateMachine:
 			self.right_speed = self.target_speed
 			drivetrain.set_speed(self.left_speed, self.right_speed)
 
+		elif self.state == "HIT_LAST_ZONE1_WALL":
+			# it hits the wall keeping it from entering zone 2, prompting it to crawl the wall in search of a hole
+			# there will be a variable that, depending on whether or not it's using left/right wallcrawler, tells it angle to turn when entering zone 2
+			# if it hits an outer wall before finding that hole, it does a 180 turn and notes that it hit an outer wall
+			# because this SHOULD mean that the light is on that outer wall
+			pass
+		elif self.state == "ENTERING_ZONE2":
+			# using aforementioned variable, turn robot and proceed set distance into zone 2 (use blocking at first, make non-blocking if there's time)
+			# turn another 45/-45 (STORE AS VAR) so that it's heading straight towards light. read value of light and then jump to next state
+			pass
+		elif self.state == "FINDING_ZONE2_LIGHT":
+			# will go forward until it consistently (for <0.5 sec maybe?) detects a solid color light and stores that color as a variable (and changes led)
+			# if it doesn't, it'll immediately do a 180 and go to above state
+			# then it'll enter next state
+			pass
+		elif self.state == "FINDING_ZONE3_ENTRANCE":
+			# turn by stored var from ENTERING_ZONE2, proceed straight until it hits wall or enters zone 3
+			# if it hits wall, crawl along it until it finds hole, next state
+			# if it hits zone 3 (how do we know this?), next state
+			pass
+		
 sm = StateMachine()
 
 while True:
