@@ -88,8 +88,34 @@ class StateMachine:
         if newState != self.stateName:
             print(f"Entering state {newState}")
             self.stateName = newState
-
     def update_sensors(self):
+            # Each time we are called, check the current time ...
+            current_time = time.ticks_ms()
+
+            # Then compare that current time against the update_time for each element
+            # to see if it is time to read it again.  For this example, I am using
+            # the same read_ms for each of them - you don't have to.
+
+            if time.ticks_diff(current_time, self.update_time["rangefinder"]) >= self.read_ms:
+                self.update_time["rangefinder"] += self.read_ms
+                self.distAhead = GFURangefinder.distance()
+            if time.ticks_diff(current_time, self.update_time["proximity0"]) >= self.read_ms:
+                self.update_time["proximity0"] += self.read_ms
+                self.distRight = proximity0.getProximity()
+            if time.ticks_diff(current_time, self.update_time["proximity1"]) >= self.read_ms:
+                self.update_time["proximity1"] += self.read_ms
+                self.distLeft = proximity1.getProximity()
+            if time.ticks_diff(current_time, self.update_time["heading"]) >= self.read_ms:
+                self.update_time["heading"] += self.read_ms
+                self.heading = imu.get_heading()
+            if time.ticks_diff(current_time, self.update_time["distance_traveled_left"]) >= self.read_ms:
+                self.update_time["distance_traveled_left"] += self.read_ms
+                self.dist_trav_left = drivetrain.get_left_encoder_position()
+            if time.ticks_diff(current_time, self.update_time["distance_traveled_right"]) >= self.read_ms:
+                self.update_time["distance_traveled_right"] += self.read_ms
+                self.dist_trav_right = drivetrain.get_right_encoder_position()
+
+    def define_course(self, accuracy):
         self.course_range = [self.heading - (accuracy * 0.01 * self.heading), self.heading + (accuracy * 0.01 * self.heading)]
 
     def stay_straight(self):
