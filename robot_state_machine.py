@@ -68,6 +68,9 @@ class StateMachine:
 		# get the current time at the start
 		current_time = time.ticks_ms()
 
+        imu.calibrate(2, 0)
+        imu.calibrate(2, 1)
+        imu.calibrate(2, 2)
 		# Note that they are being started using staggered time - so that when we go through the
 		# loop, we don't try and read each of them at the same time, but balance it across
 		# the read_ms time - which is 10 ms currently.
@@ -87,49 +90,22 @@ class StateMachine:
 			self.stateName = newState
 
 	def update_sensors(self):
-		# Each time we are called, check the current time ...
-		current_time = time.ticks_ms()
+        self.course_range = [self.heading - (accuracy * 0.01 * self.heading), self.heading + (accuracy * 0.01 * self.heading)]
 
-		# Then compare that current time against the update_time for each element
-		# to see if it is time to read it again.  For this example, I am using
-		# the same read_ms for each of them - you don't have to.
-
-		if time.ticks_diff(current_time, self.update_time["rangefinder"]) >= self.read_ms:
-			self.update_time["rangefinder"] += self.read_ms
-			self.distAhead = GFURangefinder.distance()
-		if time.ticks_diff(current_time, self.update_time["proximity0"]) >= self.read_ms:
-			self.update_time["proximity0"] += self.read_ms
-			self.distRight = proximity0.getProximity()
-		if time.ticks_diff(current_time, self.update_time["proximity1"]) >= self.read_ms:
-			self.update_time["proximity1"] += self.read_ms
-			self.distLeft = proximity1.getProximity()
-		if time.ticks_diff(current_time, self.update_time["heading"]) >= self.read_ms:
-			self.update_time["heading"] += self.read_ms
-			self.heading = imu.get_heading()
-		if time.ticks_diff(current_time, self.update_time["distance_traveled_left"]) >= self.read_ms:
-			self.update_time["distance_traveled_left"] += self.read_ms
-			self.dist_trav_left = drivetrain.get_left_encoder_position()
-		if time.ticks_diff(current_time, self.update_time["distance_traveled_right"]) >= self.read_ms:
-			self.update_time["distance_traveled_right"] += self.read_ms
-			self.dist_trav_right = drivetrain.get_right_encoder_position()
-
-	# def define_course(self, accuracy):
-	# 	self.course_range = [self.heading - (accuracy * 0.01 * self.heading),
-	# 	                     self.heading + (accuracy * 0.01 * self.heading)]
-	#
-	# def stay_straight(self):
-	# 	print(self.heading)
-	# 	print(self.course_range)
-	# 	if self.heading <= self.course_range[0]:
-	# 		drivetrain.set_speed(self.target_speed, self.target_speed - 25)
-	# 		print('slight left')
-	# 	elif self.heading >= self.course_range[1]:
-	# 		drivetrain.set_speed(self.target_speed - 25, self.target_speed)
-	# 		print('slight right')
-	# 	else:
-	# 		drivetrain.set_speed(self.target_speed, self.target_speed)
-	# 		print('staying straight')
-	# 	# the problem is that the speeds arent accurate???? but this doesn't seem to fix :(
+	def stay_straight(self):
+        print(self.heading)
+        print(self.course_range)
+        if self.heading <= self.course_range[0]:
+            drivetrain.set_speed(self.target_speed, 10)
+            print('slight left')
+        elif self.heading >= self.course_range[1]:
+            drivetrain.set_speed(10, self.target_speed)
+            print('slight right')
+        else:
+            drivetrain.set_speed(self.target_speed, self.target_speed)
+            print('staying straight')
+        # the problem is that the speeds arent accurate???? but this doesn't seem to fix :(
+    #   It might be fixed, maybe, we shall see
 
 	def evaluate_state(self):
 		# It might behoove you to verify that the self.state variable has been set to a legal
@@ -298,15 +274,9 @@ class StateMachine:
 			self.previousState = self.state
 			while self.distAhead >= 10.0:
 				drivetrain.set_speed(self.target_speed, self.target_speed)
-			# self.stay_straight()
-			if (0.0 < self.distAhead < 10.0) and (self.distLeft < self.distRight):
-				self.wallCrawlMode = 'left'
-				self.state = "ENCOUNTER_WALL"
-			elif (0.0 < self.distAhead < 10.0) and (self.distLeft > self.distRight):
-				self.wallCrawlMode = 'right'
-				self.state = 'ENCOUNTER_WALL'
-			else:
-				print('only in OHIO could this happen blud fr fr')
+			self.stay_straight()
+
+				
 
 		elif self.state == "HIT_LAST_ZONE1_WALL":
 			# it hits the wall keeping it from entering zone 2, prompting it to crawl the wall in search of a hole
@@ -332,7 +302,7 @@ class StateMachine:
 			# if it hits zone 3 (how do we know this?), next state
 			pass
 
-imu.calibrate(1,1)
+
 sm = StateMachine()
 
 while True:
