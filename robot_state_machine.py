@@ -201,30 +201,35 @@ class StateMachine:
 			self.state = "TURN_LEFT"
 
 		elif self.state == "TURN_LEFT":
+			self.turn_angle = 90
 			print('turning left')
-			self.target_heading = abs(self.heading + self.turn_angle) % 360
+			if self.new_turn == True:
+				self.target_heading = abs(self.heading + self.turn_angle) % 360
+				self.new_turn = False
 			accurcy_perc = 5
 			if self.newPrint == True:
 				print(f'turn angle is {self.turn_angle}, self_heading is {self.heading}, target heading is {self.target_heading}')
 				self.newPrint == False
-			target_heading_bounds = [self.target_heading + (self.target_heading * 0.01 * accurcy_perc),
-			                         self.target_heading - (self.target_heading * 0.01 * accurcy_perc)]
+			target_heading_small = self.target_heading - (self.target_heading * 0.01 * accurcy_perc)
+			target_heading_big = self.target_heading + (self.target_heading * 0.01 * accurcy_perc)
 
-			print(target_heading_bounds[1], '-', target_heading_bounds[0])
-			print(f'In range is {self.heading in range(int(target_heading_bounds[1]), int(target_heading_bounds[0]))}')
+			print(target_heading_small, '-', target_heading_big)
+			print(f'In range is {self.heading in range(int(target_heading_small), int(target_heading_big))}')
 
-			if not int(target_heading_bounds[1]) <= self.heading <= int(target_heading_bounds[0]):
-				print(f'In range is false skjdh')
+			if not int(target_heading_small) <= self.heading <= int(target_heading_big):
+				# print(f'In range is false skjdh')
 				self.right_speed = self.target_speed
 				self.left_speed = -1 * self.target_speed
 			if 0.0 < self.distAhead < 5:
+				self.new_turn = True
 				self.state = "ENCOUNTER_WALL"
 
-			if int(target_heading_bounds[1]) <= self.heading <= int(target_heading_bounds[0]):
-				self.state = "FOLLOW_WALL"
+			if int(target_heading_small) <= self.heading <= int(target_heading_big):
+				self.new_turn = True
 				print('we are so back')
+				self.state = "FOLLOW_WALL"
 
-			print(f'target {self.target_heading}\nbounds {target_heading_bounds[0]} {target_heading_bounds[1]}\ncurrent heading {self.heading}')
+			print(f'target {self.target_heading}\nbounds {target_heading_small} {target_heading_big}\ncurrent heading {self.heading}')
 			drivetrain.set_speed(self.left_speed, self.right_speed)
 
 		elif self.state == "RED_SEARCHING":
@@ -251,7 +256,6 @@ class StateMachine:
 		elif self.state == "GREEN_DETECTED":
 			self.previousState = self.state
 			self.currentZone = 0
-			self.turn_angle = 180
 			drivetrain.turn(180, -1, 5)
 			self.state = "ZONEFINDER_STRAIGHTAWAY"
 
