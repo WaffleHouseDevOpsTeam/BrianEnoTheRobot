@@ -161,7 +161,7 @@ class robot:
             self.state = f'turn {self.turn_direction}':
             emmigrate()
         
-        elif self.state = f'turn {self.turn_direction}':
+        elif self.state == f'turn {self.turn_direction}':
             immigrate()
             if self.turn_direction == 'Left':
                 drivetrain.turn(90, -1, 5)
@@ -176,7 +176,7 @@ class robot:
                 self.state = f'follow {self.crawl_mode} wall'
             emmigrate()
 
-        elif self.state = f'follow {self.crawl_mode} wall':
+        elif self.state == f'follow {self.crawl_mode} wall':
             if self.init_state:
                 if self.crawl_mode == 'Right': 
                     turn_ang = self.heading + 90
@@ -262,16 +262,24 @@ class robot:
                         print('dist=', self.distAhead)
                         drivetrain.set_speed(self.left_speed, self.right_speed)
 
-
-                
-                
-        elif self.state = 'go_center_room':
+        elif self.state == 'go_center_room':
+            self.start_point = self.dist_traveled_left
+            bounds = [self.room_bounds[self.phase-1]+(0.001*self.room_bounds[self.phase-1]), self.room_bounds[self.phase-1]-(0.001*self.room_bounds[self.phase-1])]
+            immigrate()
+            if bounds[1] <= self.dist_traveled_left - self.start_point <= bounds[0]:
+                if self.wall_length <= self.true_wall_length:
+                    self.crawl_mode = 'Left'
+                else:
+                    self.crawl_mode = 'Right'
+                self.state = f'turn {self.turn_direction}'
+                emmigrate()
+            else:
+                drivetrain.set_speed(self.target_speed, self.target_speed)
+        
+        elif self.state == 'detect_move_straight':
             pass
         
-        elif self.state = 'detect_move_straight':
-            pass
-        
-        elif self.state = 'return':
+        elif self.state == 'return':
             pass
 
 
