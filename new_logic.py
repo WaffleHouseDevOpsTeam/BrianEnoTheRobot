@@ -212,16 +212,16 @@ class robot:
                     # If there is something within 10 cm ahead (and we are getting a legit reading that isn't 0):
                     # If we are getting too close to the left wall (number getting bigger)
                     if self.crawl_mode == 'Right':
-                        if (self.distLeft > self.proximity_center + self.proximity_range / 2) and (self.distRight > 10.0):
+                        if (self.distRight < self.proximity_center + self.proximity_range / 2):
                             self.sub_state = "VEER_AWAY_FROM_WALL"
                         # If we are too far away from the left wall (number getting smaller)
-                        elif (self.distLeft < self.proximity_center - self.proximity_range / 2) and (self.distRight > 10.0):
+                        elif (self.distRight > self.proximity_center - self.proximity_range / 2):
                             self.sub_state = "VEER_TOWARD_WALL"
                     elif self.crawl_mode == 'Left':
-                        if (self.distRight > self.proximity_center + self.proximity_range / 2) and (self.distLeft > 10.0):
+                        if (self.distLeft < self.proximity_center + self.proximity_range / 2):
                             self.sub_state = "VEER_AWAY_FROM_WALL"
                         # If we are too far away from the left wall (number getting smaller)
-                        elif (self.distRight < self.proximity_center - self.proximity_range / 2) and (self.distLeft > 10.0):
+                        elif (self.distLeft > self.proximity_center - self.proximity_range / 2):
                             self.sub_state = "VEER_TOWARD_WALL"
 
                 if self.sub_state == "VEER_AWAY_FROM_WALL":
