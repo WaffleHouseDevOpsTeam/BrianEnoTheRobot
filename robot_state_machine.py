@@ -269,7 +269,7 @@ class StateMachine:
 			print(f'turning {turning} at an angle of {self.turn_angle} degrees')
 			# this ensures target heading is only ever updated once per state
 			if self.new_turn == True:
-				self.target_heading = abs(self.heading + self.turn_angle) % 360
+				self.target_heading = abs(self.heading + self.turn_angle)
 				self.new_turn = False
 			accurcy_perc = 5
 			# this ensures print is only called once to keep things from getting too cluttered
@@ -298,7 +298,7 @@ class StateMachine:
 					self.left_speed = self.targetleft_speed
 			if 0.0 < self.distAhead < 5:
 				drivetrain.straight(5, -1)
-			if int(target_heading_small) <= self.heading <= int(target_heading_big):
+			if (int(target_heading_small) <= self.heading <= int(target_heading_big)) or (self.heading >= (self.gothisway + 135) ):
 				self.new_turn = True
 				# if self.zone1initialturn == True:
 				# 	self.zone1_oneeighty = True
