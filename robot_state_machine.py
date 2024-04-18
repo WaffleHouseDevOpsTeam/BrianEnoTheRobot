@@ -33,6 +33,7 @@ class StateMachine:
 	# This is used to save the name of the current state
 	stateName = ""
 	new_turn = True
+	turnOkay = False
 
 	prev_head_diff = 1000000
 	head_diff = 3000000
@@ -153,7 +154,7 @@ class StateMachine:
 			self.left_speed = self.target_speed
 			print(f'following wall, wallCrawlMode is {self.wallCrawlMode}')
 			# If there is something within 10 cm ahead (and we are getting a legit reading that isn't 0):
-			if 0.0 < self.distAhead < 20.0:
+			if 0.0 < self.distAhead < 10.0:
 				self.state = "ENCOUNTER_WALL"
 			# If we are getting too close to the left wall (number getting bigger)
 			elif (self.distLeft > 20.0) and (self.distRight > 20.0) and (self.zone1initialturn == True):
@@ -198,12 +199,13 @@ class StateMachine:
 			self.print_state("VEER_TOWARD_WALL")
 			print('dist=', self.distAhead)
 			initialHeading = self.heading
-			if 0.0 < self.distAhead < 20.0:
+			if 0.0 < self.distAhead < 10.0:
 				self.state = "ENCOUNTER_WALL"
 			if self.wallCrawlMode == 'left':
 				if self.right_speed < 40:
 					self.right_speed = self.right_speed + (
 							(abs(self.proximity_center - self.distLeft) / self.proximity_center) * .1)
+					self.left_speed = 10
 				if (abs(self.heading - initialHeading) >= 80):
 					if self.previousState == 'ZONEFINDER_STRAIGHTAWAY':
 						self.state = 'ENTERING_ZONE2'
@@ -211,6 +213,7 @@ class StateMachine:
 				if self.left_speed < 40:
 					self.left_speed = self.left_speed + (
 							(abs(self.proximity_center - self.distRight) / self.proximity_center) * .1)
+					self.right_speed = 10
 			drivetrain.set_speed(self.left_speed, self.right_speed)
 
 			# Once we see the value is within tolerance, immediately reset the speed (to keep it straight)
@@ -240,7 +243,7 @@ class StateMachine:
 				turning = 'around'
 			# if crawling using right sensor, it needs to turn to its left (away from wall)
 			if self.wallCrawlMode == 'right':
-				self.turn_angle = 90
+				self.turn_angle = 45
 				turning = 'left'
 			print(f'turning {turning} at an angle of {self.turn_angle} degrees')
 			# this ensures target heading is only ever updated once per state
@@ -285,24 +288,29 @@ class StateMachine:
 
 		elif self.state == "RED_SEARCHING":
 			# it starts here but STUPID ENCOUNTER WALL REEE
+			self.turnOkay = False
 			self.wallCrawlMode = 'right'
 			currentCol = color.getColor()
 			print(f'current color is {currentCol}')
 			if currentCol == 'red':
 				setColor(currentCol)
 				print("Found red")
+				self.turnOkay = False
 				self.state = "GREEN_SEARCHING"
 
 		elif self.state == "GREEN_SEARCHING":
 			currentCol = color.getColor()
 			print(f'current color is {currentCol}')
 			if currentCol == 'red':
+				self.turnOkay = False
 				print("I was born red-y")
 				self.state = "GREEN_SEARCHING"
 			if currentCol == 'green':
 				setColor(currentCol)
+				self.turnOkay = True
+			if self.turnOkay == True:
 				drivetrain.turn(180, -1, 5)
-				time.sleep(1)
+				time.sleep(0.5)
 				self.state = "ZONEFINDER_STRAIGHTAWAY"
 
 		elif self.state == "ZONEFINDER_STRAIGHTAWAY":
@@ -310,8 +318,9 @@ class StateMachine:
 			self.define_course(5)
 			self.stay_straight()
 			drivetrain.set_speed(self.target_speed, self.target_speed)
-		if self.distAhead <= 9.0:
-			self.state = "ENCOUNTER_WALL"
+			if self.distAhead <= 9.0:
+				drivetrain.straight(5, -1)
+				self.state = "TURNING"
 
 		elif self.state == "HIT_LAST_ZONE1_WALL":
 			# might not need, i think we're going to cover this in encounter_wall
