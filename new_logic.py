@@ -44,11 +44,11 @@ class robot:
     dist_trav_right = 0
 
     # Room Variables
-    room_width = 0 # replace with measurements
-    wall_length = 0 # This will update, no need to edit here
+    room_width = 0  # replace with measurements
+    wall_length = 0  # This will update, no need to edit here
 
     # misc variables
-    dist_stop = 20
+    dist_stop = 5
 
     # and a dictionary to hold the times when each of the sensors were last updated
     update_time = {}
@@ -122,6 +122,10 @@ class robot:
             self.update_time["distance_traveled_right"] += self.read_ms
             self.dist_trav_right = drivetrain.get_right_encoder_position()
 
+    def print_debug(self):
+        print(
+            f'{self.phase} state: {self.state} | crawl_mode {self.crawl_mode} | turn_direction {self.turn_direction} | {self.search_color} {self.detected_color} | {self.sub_state}')
+
     def immigrate(self):
         if self.init_state:
             immi_cond = False
@@ -172,9 +176,9 @@ class robot:
         elif self.state == f'turn {self.turn_direction}':
             self.immigrate()
             if self.turn_direction == 'Left':
-                drivetrain.turn(90, -1, 5)
-            elif self.turn_direction == 'Right':
                 drivetrain.turn(-90, -1, 5)
+            elif self.turn_direction == 'Right':
+                drivetrain.turn(90, -1, 5)
 
             if self.phase == 2:
                 self.state = 'go_straight'
@@ -186,16 +190,18 @@ class robot:
 
         elif self.state == f'follow {self.crawl_mode} wall':
             if self.init_state:
+                print('init')
                 if self.crawl_mode == 'Right':
-                    turn_ang = self.heading + 90
+                    self.turn_ang = self.heading + 90
                 elif self.crawl_mode == 'Left':
-                    turn_ang = self.heading - 90
-            self.sub_state = 'FOLLOW_WALL'
+                    self.turn_ang = self.heading - 90
+                self.sub_state = 'FOLLOW_WALL'
             self.immigrate()
+            
             if (self.distAhead <= self.dist_stop) and (self.phase == 3):
                 switch_crawl_mode()
                 self.state = f'turn {self.turn_direction}'
-            elif self.heading >= turn_ang:
+            elif self.heading >= self.turn_ang:
                 self.phase += 1
                 self.state = 'go_center_room'
             else:
@@ -205,74 +211,71 @@ class robot:
                     print(f'following wall, crawl_mode is {self.crawl_mode}')
                     # If there is something within 10 cm ahead (and we are getting a legit reading that isn't 0):
                     # If we are getting too close to the left wall (number getting bigger)
-                elif (self.distLeft > self.proximity_center + self.proximity_range / 2) and (self.distRight > 10.0):
-                    self.sub_state = "VEER_AWAY_FROM_WALL"
-                # If we are too far away from the left wall (number getting smaller)
-                elif (self.distLeft < self.proximity_center - self.proximity_range / 2) and (self.distRight > 10.0):
-                    self.sub_state = "VEER_TOWARD_WALL"
-                elif (self.distRight > self.proximity_center + self.proximity_range / 2) and (self.distLeft > 10.0):
-                    self.sub_state = "VEER_AWAY_FROM_WALL"
-                # If we are too far away from the left wall (number getting smaller)
-                elif (self.distRight < self.proximity_center - self.proximity_range / 2) and (self.distLeft > 10.0):
-                    self.sub_state = "VEER_TOWARD_WALL"
+                    if self.crawl_mode == 'Right':
+                        if (self.distLeft > self.proximity_center + self.proximity_range / 2) and (self.distRight > 10.0):
+                            self.sub_state = "VEER_AWAY_FROM_WALL"
+                        # If we are too far away from the left wall (number getting smaller)
+                        elif (self.distLeft < self.proximity_center - self.proximity_range / 2) and (self.distRight > 10.0):
+                            self.sub_state = "VEER_TOWARD_WALL"
+                    elif self.crawl_mode == 'Left':
+                        if (self.distRight > self.proximity_center + self.proximity_range / 2) and (self.distLeft > 10.0):
+                            self.sub_state = "VEER_AWAY_FROM_WALL"
+                        # If we are too far away from the left wall (number getting smaller)
+                        elif (self.distRight < self.proximity_center - self.proximity_range / 2) and (self.distLeft > 10.0):
+                            self.sub_state = "VEER_TOWARD_WALL"
 
-        if self.sub_state == "VEER_AWAY_FROM_WALL":
-            self.print_state("VEER_AWAY_FROM_WALL")
-            if time.ticks_diff(current_time, self.update_time["state_interval"]) > self.read_ms:
-                self.update_time["state_interval"] = current_time
-                if self.crawl_mode == 'Left':
-                    if self.left_speed < 40:
-                        self.left_speed = self.left_speed + (
-                                (abs(self.proximity_center - self.distLeft) / self.proximity_center) * .1)
-                if self.crawl_mode == 'Right':
-                    if self.right_speed < 40:
-                        self.right_speed = self.right_speed + (
-                                (abs(self.proximity_center - self.distRight) / self.proximity_center) * .1)
-                drivetrain.set_speed(self.left_speed, self.right_speed)
-
-        # Once we see the value is within tolerance, immediately reset the speed (to keep it straight)
-        # And let's return to the state we came from - which is FOLLOW_LEFT
-            if (self.distLeft <= self.proximity_center + self.proximity_range / 2) or (
-                    self.distRight <= self.proximity_center + self.proximity_range / 2):
-                self.left_speed = self.target_speed
-                self.right_speed = self.target_speed
-                drivetrain.set_speed(self.target_speed, self.target_speed)
-                self.sub_state = "FOLLOW_WALL"
-
-        elif self.sub_state == "VEER_TOWARD_WALL":
-            self.print_state("VEER_TOWARD_WALL")
-            print('dist=', self.distAhead)
-            initialHeading = self.heading
-            if 0.0 < self.distAhead < 20.0:
-                self.sub_state = "ENCOUNTER_WALL"
-            if self.crawl_mode == 'Left':
-                if self.right_speed < 40:
-                    self.right_speed = self.right_speed + (
-                            (abs(self.proximity_center - self.distLeft) / self.proximity_center) * .1)
-                if (abs(self.heading - initialHeading) >= 80):
-                    if self.previousState == 'ZONEFINDER_STRAIGHTAWAY':
-                        self.state = 'ENTERING_ZONE2'
-            if self.crawl_mode == 'right':
-                if self.left_speed < 40:
-                    self.left_speed = self.left_speed + (
-                            (abs(self.proximity_center - self.distRight) / self.proximity_center) * .1)
-            drivetrain.set_speed(self.left_speed, self.right_speed)
-
-            # Once we see the value is within tolerance, immediately reset the speed (to keep it straight)
-            # And let's return to the state we came from - which is FOLLOW_LEFT
-            if (self.distLeft >= self.proximity_center - self.proximity_range / 2) or (
-                    self.distRight >= self.proximity_center - self.proximity_range / 2):
-                # Reset the left and right speeds to target for a future veer session, set to target speed
-                self.left_speed = self.target_speed
-                self.right_speed = self.target_speed
-                drivetrain.set_speed(self.target_speed, self.target_speed)
-                self.state = "FOLLOW_WALL"
-                print('dist=', self.distAhead)
-                drivetrain.set_speed(self.left_speed, self.right_speed)
+                if self.sub_state == "VEER_AWAY_FROM_WALL":
+                    if time.ticks_diff(current_time, self.update_time["state_interval"]) > self.read_ms:
+                        self.update_time["state_interval"] = current_time
+                        if self.crawl_mode == 'Left':
+                            if self.left_speed < 40:
+                                self.left_speed = self.left_speed + (
+                                        (abs(self.proximity_center - self.distLeft) / self.proximity_center) * .1)
+                        if self.crawl_mode == 'Right':
+                            if self.right_speed < 40:
+                                self.right_speed = self.right_speed + (
+                                        (abs(self.proximity_center - self.distRight) / self.proximity_center) * .1)
+                        drivetrain.set_speed(self.left_speed, self.right_speed)
+        
+                    # Once we see the value is within tolerance, immediately reset the speed (to keep it straight)
+                    # And let's return to the state we came from - which is FOLLOW_LEFT
+                    if (self.distLeft <= self.proximity_center + self.proximity_range / 2) or (
+                            self.distRight <= self.proximity_center + self.proximity_range / 2):
+                        self.left_speed = self.target_speed
+                        self.right_speed = self.target_speed
+                        drivetrain.set_speed(self.target_speed, self.target_speed)
+                        self.sub_state = "FOLLOW_WALL"
+        
+                elif self.sub_state == "VEER_TOWARD_WALL":
+                    
+                    print('dist=', self.distAhead)
+                    initialHeading = self.heading
+                    if self.crawl_mode == 'Left':
+                        if self.right_speed < 40:
+                            self.right_speed = self.right_speed + (
+                                    (abs(self.proximity_center - self.distLeft) / self.proximity_center) * .1)
+                    if self.crawl_mode == 'right':
+                        if self.left_speed < 40:
+                            self.left_speed = self.left_speed + (
+                                    (abs(self.proximity_center - self.distRight) / self.proximity_center) * .1)
+                    drivetrain.set_speed(self.left_speed, self.right_speed)
+        
+                    # Once we see the value is within tolerance, immediately reset the speed (to keep it straight)
+                    # And let's return to the state we came from - which is FOLLOW_LEFT
+                    if (self.distLeft >= self.proximity_center - self.proximity_range / 2) or (
+                            self.distRight >= self.proximity_center - self.proximity_range / 2):
+                        # Reset the left and right speeds to target for a future veer session, set to target speed
+                        self.left_speed = self.target_speed
+                        self.right_speed = self.target_speed
+                        drivetrain.set_speed(self.target_speed, self.target_speed)
+                        self.sub_state = "FOLLOW_WALL"
+                        print('dist=', self.distAhead)
+                        drivetrain.set_speed(self.left_speed, self.right_speed)
 
         elif self.state == 'go_center_room':
             self.start_point = self.dist_traveled_left
-            bounds = [self.room_bounds[self.phase -1 ] +(0.001 * self.room_bounds[self.phase - 1]), self.room_bounds[self.phase -1 ] -(0.001 *self.room_bounds[self.phase -1])]
+            bounds = [self.room_bounds[self.phase - 1] + (0.001 * self.room_bounds[self.phase - 1]),
+                      self.room_bounds[self.phase - 1] - (0.001 * self.room_bounds[self.phase - 1])]
             self.immigrate()
             if bounds[1] <= self.dist_traveled_left - self.start_point <= bounds[0]:
                 if self.wall_length <= self.true_wall_length:
@@ -293,8 +296,7 @@ class robot:
 
 sm = robot()
 
-
 while True:
     sm.update_sensors()
-    print(sm.state)
+    sm.print_debug()
     sm.eval_state()
