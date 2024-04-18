@@ -140,20 +140,15 @@ class StateMachine:
 	# It might be fixed, maybe, we shall see
 
 	def evaluate_state(self):
-		# It might behoove you to verify that the self.state variable has been set to a legal
-		# state name. That would mean that you would  create a list of the names, and see if
-		# the state name is in that list ... that has been left as an exercise for the reader :)
-		# But - I guarantee you are going to mistype a state name at some point on this project.
 
 		current_time = time.ticks_ms()
-		# This is the start of the state machine part
 
-		if self.state == "RESET":
-			self.print_state("RESET")
-			drivetrain.set_speed(self.target_speed, self.target_speed)
-			self.state = "FOLLOW_WALL"
+		# if self.state == "RESET":
+		# 	self.print_state("RESET")
+		# 	drivetrain.set_speed(self.target_speed, self.target_speed)
+		# 	self.state = "FOLLOW_WALL"
 
-		elif self.state == "FOLLOW_WALL":
+		if self.state == "FOLLOW_WALL":
 			self.right_speed = self.target_speed
 			self.left_speed = self.target_speed
 			print(f'following wall, wallCrawlMode is {self.wallCrawlMode}')
@@ -289,8 +284,8 @@ class StateMachine:
 			drivetrain.set_speed(self.left_speed, self.right_speed)
 
 		elif self.state == "RED_SEARCHING":
-			self.wallCrawlMode = 'left'
-			self.previousState = self.state
+			# it starts here but STUPID ENCOUNTER WALL REEE
+			self.wallCrawlMode = 'right'
 			currentCol = color.getColor()
 			print(f'current color is {currentCol}')
 			if currentCol == 'red':
@@ -299,34 +294,27 @@ class StateMachine:
 				self.state = "GREEN_SEARCHING"
 
 		elif self.state == "GREEN_SEARCHING":
-			self.previousState = self.state
 			currentCol = color.getColor()
 			print(f'current color is {currentCol}')
 			if currentCol == 'red':
-				print("I'm red-y")
+				print("I was born red-y")
 				self.state = "GREEN_SEARCHING"
 			if currentCol == 'green':
 				setColor(currentCol)
-				self.state = "GREEN_DETECTED"
-
-		elif self.state == "GREEN_DETECTED":
-			self.previousState = self.state
-			self.currentZone = 0
-			drivetrain.turn(180, -1, 5)
-			time.sleep(0.75)
-			self.state = "ZONEFINDER_STRAIGHTAWAY"
+				drivetrain.turn(180, -1, 5)
+				time.sleep(1)
+				self.state = "ZONEFINDER_STRAIGHTAWAY"
 
 		elif self.state == "ZONEFINDER_STRAIGHTAWAY":
 			self.previousState = self.state
-			if self.distAhead >= 10.0:
-				self.define_course(5)
-				self.stay_straight()
-				drivetrain.set_speed(self.target_speed, self.target_speed)
-		if self.distAhead < 10.0:
+			self.define_course(5)
+			self.stay_straight()
+			drivetrain.set_speed(self.target_speed, self.target_speed)
+		if self.distAhead <= 9.0:
 			self.state = "ENCOUNTER_WALL"
 
 		elif self.state == "HIT_LAST_ZONE1_WALL":
-
+			# might not need, i think we're going to cover this in encounter_wall
 			# it hits the wall keeping it from entering zone 2, prompting it to crawl the wall in search of a hole
 			# there will be a variable that, depending on whether or not it's using left/right wallcrawler, tells it angle to turn when entering zone 2
 			# if it hits an outer wall before finding that hole, it does a 180 turn and notes that it hit an outer wall
