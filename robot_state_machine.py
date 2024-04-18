@@ -49,6 +49,9 @@ class StateMachine:
 	zone1_oneeighty = False
 	gothisway = 0
 	foundFirstHole = False
+	zone2drivetrain = True
+	zone2light = ''
+	zone2colorfound = False
 
 	# Proximity values for wall following
 	proximity_center = 500  # The ideal value we want to read
@@ -263,9 +266,10 @@ class StateMachine:
 				self.turn_angle = 75
 				turning = 'left'
 			if self.foundFirstHole == True:
-				# self.target_heading = self.gothisway
+				self.target_heading = self.gothisway
 				self.new_turn = False
-				self.turn_angle = -90
+				# self.turn_angle = -90
+				print(f'turning {self.target_heading - self.heading} degrees to go to next room')
 			print(f'turning {turning} at an angle of {self.turn_angle} degrees')
 			# this ensures target heading is only ever updated once per state
 			if self.new_turn == True:
@@ -298,7 +302,7 @@ class StateMachine:
 					self.left_speed = self.targetleft_speed
 			if 0.0 < self.distAhead < 5:
 				drivetrain.straight(5, -1)
-			if (int(target_heading_small) <= self.heading <= int(target_heading_big)) or (self.heading >= (self.gothisway + 135) ):
+			if (int(target_heading_small) <= self.heading <= int(target_heading_big)) or (self.heading >= (self.gothisway + 115) ):
 				self.new_turn = True
 				# if self.zone1initialturn == True:
 				# 	self.zone1_oneeighty = True
@@ -308,6 +312,8 @@ class StateMachine:
 					print('just hit zone 1 wall and it kinda hurt')
 					self.zone1initialturn = True
 					self.state = "FOLLOW_WALL"
+				if self.foundFirstHole == True:
+					self.state = 'ENTERING_ZONE2'
 				self.state = "FOLLOW_WALL"
 
 			print(
@@ -360,14 +366,29 @@ class StateMachine:
 			pass
 
 		elif self.state == "ENTERING_ZONE2":
-			if self.wallCrawlMode == 'left':
-				drivetrain.turn(-90, -1, 5)
-				time.sleep(0.5)
+			if (self.zone2drivetrain == True):
 				drivetrain.straight(10, 1)
-			if self.wallCrawlMode == 'right':
-				drivetrain.turn(90, -1, 5)
+				self.zone2drivetrain = False
+				eepy = False
+			if (eepy == False):
 				time.sleep(0.5)
-				drivetrain.straight(10, 1)
+				eepy = True
+				turnTime = False
+			if (turnTime == True):
+				drivetrain.turn(-90,-1,3)
+				readytoCheck = True
+			if (readytoCheck == True):
+
+			zone2color = color.getColor()
+			if (zone2color == 'red' or 'green' or 'blue'):
+				tempColor = zone2color
+				time.sleep(0.5)
+				if (zone2color == tempColor):
+					self.zone2light = tempColor
+					setColor(tempColor)
+				else:
+					tempColor = ''
+
 
 			# using aforementioned variable, turn robot and proceed set distance into zone 2 (use blocking at first, make non-blocking if there's time)
 			# turn another 45/-45 (STORE AS VAR) so that it's heading straight towards light. read value of light and then jump to next state
