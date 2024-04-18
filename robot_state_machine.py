@@ -182,7 +182,7 @@ class StateMachine:
 			# 	self.state = "VEER_TOWARD_WALL"
 
 		elif self.state == "VEER_AWAY_FROM_WALL":
-			self.print_state("VEER_AWAY_FROM_WALL")
+			self.print_state(f"VEER_AWAY_FROM_{self.wallCrawlMode}_WALL")
 			if 0.0 < self.distAhead < 10.0:
 				self.state = "ENCOUNTER_WALL"
 			if time.ticks_diff(current_time, self.update_time["state_interval"]) > self.read_ms:
@@ -207,7 +207,7 @@ class StateMachine:
 				self.state = "FOLLOW_WALL"
 
 		elif self.state == "VEER_TOWARD_WALL":
-			self.print_state("VEER_TOWARD_WALL")
+			self.print_state(f"VEER_TOWARD_{self.wallCrawlMode}_WALL")
 			print('dist=', self.distAhead)
 			initialHeading = self.heading
 			if 0.0 < self.distAhead < 10.0:
