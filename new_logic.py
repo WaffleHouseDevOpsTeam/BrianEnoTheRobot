@@ -291,4 +291,3 @@ while True:
     sm.update_sensors()
     sm.print_debug()
     sm.eval_state()
-
