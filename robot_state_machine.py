@@ -158,15 +158,16 @@ class StateMachine:
 				self.state = 'ENTERING_ZONE2'
 			if self.wallCrawlMode == 'right':
 				if (self.distRight > self.proximity_center + self.proximity_range / 2):
-					self.state = 'VEER_TOWARD_WALL'
-				elif (self.distRight < self.proximity_center + self.proximity_range / 2):
 					self.state = 'VEER_AWAY_FROM_WALL'
+				elif (self.distRight < self.proximity_center + self.proximity_range / 2):
+					self.state = 'VEER_TOWARD_WALL'
 			if self.wallCrawlMode == 'left':
 				if (self.distLeft > self.proximity_center + self.proximity_range / 2):
 					self.state = 'VEER_TOWARD_WALL'
 				elif (self.distLeft < self.proximity_center + self.proximity_range / 2):
 					self.state = 'VEER_AWAY_FROM_WALL'
 			if (self.wallCrawlMode == 'right') and (self.distRight > 10):
+				print('found first hole')
 				foundFirstHole = True
 				self.state = 'TURNING'
 			# elif (self.distLeft > self.proximity_center + self.proximity_range / 2) and (self.distRight > 10.0):
@@ -243,10 +244,13 @@ class StateMachine:
 			self.state = "TURNING"
 
 		elif self.state == "TURNING":
-			# if crawling using left sensor, it needs to turn to its right (away from wall)
+			# this checks if it has already hit the zone 1 wall and turned. if it has,
+			# and it's finding another wall in front of it, this SHOULD mean that it has crawled the
+			# length of the wall so far without finding an entrance
 			if self.zone1initialturn == True:
 				self.turn_angle = 180
 				turning = 'around'
+			# if crawling using left sensor, it needs to turn to its right (away from wall)
 			if self.wallCrawlMode == 'left':
 				self.turn_angle = -90
 				turning = 'right'
@@ -256,11 +260,12 @@ class StateMachine:
 			# 	turning = 'around'
 			# if crawling using right sensor, it needs to turn to its left (away from wall)
 			if self.wallCrawlMode == 'right':
-				self.turn_angle = 90
+				self.turn_angle = 75
 				turning = 'left'
 			if self.foundFirstHole == True:
-				self.target_heading = self.gothisway
+				# self.target_heading = self.gothisway
 				self.new_turn = False
+				self.turn_angle = -90
 			print(f'turning {turning} at an angle of {self.turn_angle} degrees')
 			# this ensures target heading is only ever updated once per state
 			if self.new_turn == True:
@@ -279,12 +284,18 @@ class StateMachine:
 			print(f'In range is {self.heading in range(int(target_heading_small), int(target_heading_big))}')
 
 			if not int(target_heading_small) <= self.heading <= int(target_heading_big):
-				if self.wallCrawlMode == 'left':
-					self.right_speed = -1 * self.targetright_speed
-					self.left_speed = self.targetleft_speed
+				# if self.heading < self.target_heading:
+				# 	self.right_speed = -1 * self.targetright_speed
+				# 	self.left_speed = self.targetleft_speed
+				# if self.heading > self.target_heading:
+				# 	self.right_speed = self.targetright_speed
+				# 	self.left_speed = -1 * self.targetleft_speed
 				if self.wallCrawlMode == 'right':
 					self.right_speed = self.targetright_speed
 					self.left_speed = -1 * self.targetleft_speed
+				if self.wallCrawlMode == 'left':
+					self.right_speed = -1 * self.targetright_speed
+					self.left_speed = self.targetleft_speed
 			if 0.0 < self.distAhead < 5:
 				drivetrain.straight(5, -1)
 			if int(target_heading_small) <= self.heading <= int(target_heading_big):
@@ -294,8 +305,9 @@ class StateMachine:
 				# 	print('scanned the wall, no holes found, turning around now uWu')
 				# 	self.wallCrawlMode = 'left'
 				if self.previousState == "ZONEFINDER_STRAIGHTAWAY":
-					self.zone1initialturn = True
 					print('just hit zone 1 wall and it kinda hurt')
+					self.zone1initialturn = True
+					self.state = "FOLLOW_WALL"
 				self.state = "FOLLOW_WALL"
 
 			print(
